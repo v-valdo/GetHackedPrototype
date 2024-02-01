@@ -44,8 +44,13 @@ public class Server
 
             Console.WriteLine($"{request.HttpMethod} request received");
 
-            if (request.HasEntityBody && request.HttpMethod == "POST")
+
+            string path = request.Url?.AbsolutePath ?? "/";
+            string responseString = "";
+
+            if (request.HasEntityBody && request.HttpMethod == "POST" && request.Url?.AbsolutePath == "/user/register")
             {
+
                 using (var body = request.InputStream)
                 {
                     var encoder = request.ContentEncoding;
@@ -86,17 +91,13 @@ public class Server
                 }
             }
 
-            else
+            // view all users
+            else if (request.HttpMethod == "GET" && path.Contains("users/all"))
             {
-                string path = request.Url?.AbsolutePath ?? "/";
-                string responseString = "";
-
-                // view all users
-                if (request.HttpMethod == "GET" && path.Contains("users/all"))
                 {
-                    const string qTodo = "select * from users";
+                    const string qUsers = "select * from users";
 
-                    var cmd = _db.CreateCommand(qTodo);
+                    var cmd = _db.CreateCommand(qUsers);
                     var reader = await cmd.ExecuteReaderAsync();
 
                     while (await reader.ReadAsync())
@@ -109,38 +110,39 @@ public class Server
 
                     }
                 }
-
-                // Query specific users
-                else if (request.HttpMethod == "GET" && path.Contains("users/id/"))
-                {
-                    const string qTodo = "select username, password from users where id = $1";
-
-                    var cmd = _db.CreateCommand(qTodo);
-
-                    int userId = int.Parse(path.Split("/").Last());
-
-                    cmd.Parameters.AddWithValue(userId);
-
-                    var reader = await cmd.ExecuteReaderAsync();
-                    while (await reader.ReadAsync())
-                    {
-                        responseString += reader.GetString(0) + ", ";
-                        responseString += reader.GetString(1) + ", ";
-                    }
-
-                }
-                else
-                {
-                    responseString = "Nothing here...";
-                }
-
-                byte[] buffer = Encoding.UTF8.GetBytes(responseString);
-                response.OutputStream.Write(buffer, 0, buffer.Length);
-                response.OutputStream.Close();
             }
 
-            // Loopback
-            _listener.BeginGetContext(new AsyncCallback(Route), _listener);
+            // Query specific users
+            else if (request.HttpMethod == "GET" && path.Contains("users/id/"))
+            {
+                const string qTodo = "select username, password from users where id = $1";
+
+                var cmd = _db.CreateCommand(qTodo);
+
+                int userId = int.Parse(path.Split("/").Last());
+
+                cmd.Parameters.AddWithValue(userId);
+
+                var reader = await cmd.ExecuteReaderAsync();
+                while (await reader.ReadAsync())
+                {
+                    responseString += reader.GetString(0) + ", ";
+                    responseString += reader.GetString(1) + ", ";
+                }
+
+            }
+            else
+            {
+                responseString = "Nothing here...";
+            }
+
+            byte[] buffer = Encoding.UTF8.GetBytes(responseString);
+
+            response.OutputStream.Write(buffer, 0, buffer.Length);
+            response.OutputStream.Close();
         }
+
+        // Loopback
+        _listener.BeginGetContext(new AsyncCallback(Route), _listener);
     }
 }

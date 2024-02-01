@@ -44,7 +44,6 @@ public class Server
 
             Console.WriteLine($"{request.HttpMethod} request received");
 
-
             string path = request.Url?.AbsolutePath ?? "/";
             string responseString = "";
 
@@ -94,34 +93,31 @@ public class Server
             // view all users
             else if (request.HttpMethod == "GET" && path.Contains("users/all"))
             {
+                const string qUsers = "select * from users";
+
+                var cmd = _db.CreateCommand(qUsers);
+                var reader = await cmd.ExecuteReaderAsync();
+
+                while (await reader.ReadAsync())
                 {
-                    const string qUsers = "select * from users";
-
-                    var cmd = _db.CreateCommand(qUsers);
-                    var reader = await cmd.ExecuteReaderAsync();
-
-                    while (await reader.ReadAsync())
-                    {
-                        responseString += reader.GetInt32(0) + ", "; // user id
-                        responseString += reader.GetString(1) + ", "; // username
-                        responseString += reader.GetString(2) + ", "; // password
-                        responseString += reader.GetInt32(3) + ", "; // firewallhealth
-                        responseString += reader.GetInt32(4) + ", "; // points
-
-                    }
+                    responseString += reader.GetInt32(0) + ", "; // user id
+                    responseString += reader.GetString(1) + ", "; // username
+                    responseString += reader.GetString(2) + ", "; // password
+                    responseString += reader.GetInt32(3) + ", "; // firewallhealth
+                    responseString += reader.GetInt32(4) + ", "; // points
                 }
             }
 
             // Query specific users
-            else if (request.HttpMethod == "GET" && path.Contains("users/id/"))
+            else if (request.HttpMethod == "GET" && path.Contains("users/id"))
             {
                 const string qTodo = "select username, password from users where id = $1";
 
-                var cmd = _db.CreateCommand(qTodo);
+                var cmd = _db?.CreateCommand(qTodo);
 
                 int userId = int.Parse(path.Split("/").Last());
 
-                cmd.Parameters.AddWithValue(userId);
+                cmd?.Parameters.AddWithValue(userId);
 
                 var reader = await cmd.ExecuteReaderAsync();
                 while (await reader.ReadAsync())
@@ -129,8 +125,31 @@ public class Server
                     responseString += reader.GetString(0) + ", ";
                     responseString += reader.GetString(1) + ", ";
                 }
+            }
+            else if (request.HttpMethod == "GET" && path.Contains("attack/user"))
+            {
+                const string qUpdateFirewall = "UPDATE users SET firewallhealth = firewallhealth - 10 WHERE id = $1";
+                const string qReadFirewall = "select firewallhealth from users where id = $1";
+
+                int userId = int.Parse(path.Split("/").Last());
+
+                await using var cmd = _db.CreateCommand(qUpdateFirewall);
+                cmd.Parameters.AddWithValue(userId);
+                await cmd.ExecuteNonQueryAsync();
+
+
+                var cmd2 = _db.CreateCommand(qReadFirewall);
+                cmd2.Parameters.AddWithValue(userId);
+
+                var reader = await cmd2.ExecuteReaderAsync();
+                while (await reader.ReadAsync())
+                {
+                    responseString += reader.GetInt32(0);
+                }
+                responseString = $"You damaged the firewall";
 
             }
+
             else
             {
                 responseString = "Nothing here...";

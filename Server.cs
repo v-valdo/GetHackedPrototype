@@ -131,6 +131,8 @@ public class Server
                 const string qUpdateFirewall = "UPDATE users SET firewallhealth = firewallhealth - 10 WHERE id = $1";
                 const string qReadFirewall = "select firewallhealth from users where id = $1";
 
+                const string qUpdateDetection = "UPDATE users SET detection = detection + 10 WHERE id = $1";
+
                 int userId = int.Parse(path.Split("/").Last());
 
                 await using var cmd = _db.CreateCommand(qUpdateFirewall);
@@ -140,13 +142,20 @@ public class Server
 
                 var cmd2 = _db.CreateCommand(qReadFirewall);
                 cmd2.Parameters.AddWithValue(userId);
+                await cmd2.ExecuteNonQueryAsync();
+
+                var cmd3 = _db.CreateCommand(qUpdateDetection);
+                cmd.Parameters.AddWithValue(userId);
+                await cmd3.ExecuteNonQueryAsync();
 
                 var reader = await cmd2.ExecuteReaderAsync();
                 while (await reader.ReadAsync())
                 {
-                    responseString += reader.GetInt32(0)
+                    responseString += reader.GetInt32(0);
+                    responseString = $"You reduced your opponent's firewall by 10%";
+                    responseString = $"Your detection went up to ...";
+
                 }
-                responseString = $"You damaged the firewall";
 
             }
 

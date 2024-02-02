@@ -132,32 +132,42 @@ public class Server
                 const string qReadFirewall = "select firewallhealth from users where id = $1";
 
                 const string qUpdateDetection = "UPDATE users SET detection = detection + 10 WHERE id = $1";
+                const string qReadDetection = "select detection from users where id = $1";
 
                 int userId = int.Parse(path.Split("/").Last());
 
-                await using var cmd = _db.CreateCommand(qUpdateFirewall);
-                cmd.Parameters.AddWithValue(userId);
-                await cmd.ExecuteNonQueryAsync();
+                //Update Firewall
+                var cmdUpdateFirewall = _db.CreateCommand(qUpdateFirewall);
+                cmdUpdateFirewall.Parameters.AddWithValue(userId);
+                await cmdUpdateFirewall.ExecuteNonQueryAsync();
 
-
-                var cmd2 = _db.CreateCommand(qReadFirewall);
-                cmd2.Parameters.AddWithValue(userId);
-                await cmd2.ExecuteNonQueryAsync();
-
-                var cmd3 = _db.CreateCommand(qUpdateDetection);
-                cmd.Parameters.AddWithValue(userId);
-                await cmd3.ExecuteNonQueryAsync();
-
-                var reader = await cmd2.ExecuteReaderAsync();
-                while (await reader.ReadAsync())
+                //Read Firewall
+                var cmdReadFirewall = _db.CreateCommand(qReadFirewall);
+                cmdReadFirewall.Parameters.AddWithValue(userId);
+                var readerFirewall = await cmdReadFirewall.ExecuteReaderAsync();
+                while (await readerFirewall.ReadAsync())
                 {
-                    responseString += reader.GetInt32(0);
-                    responseString = $"You reduced your opponent's firewall by 10%";
-                    responseString = $"Your detection went up to ...";
-
+                    int firewallHealth = readerFirewall.GetInt32(0);
+                    responseString += $"Your attack was succesfull and your opponent's firewall is now at {firewallHealth} %";
                 }
 
-            }
+                //Update Detection
+                var cmdUpdateDetection = _db.CreateCommand(qUpdateDetection);
+                cmdUpdateDetection.Parameters.AddWithValue(userId);
+                await cmdUpdateDetection.ExecuteNonQueryAsync();
+
+                //Read Detection 
+
+                var cmdReadDetection = _db.CreateCommand(qReadDetection);
+                cmdReadDetection.Parameters.AddWithValue(userId);
+                var readerDetection = await cmdReadDetection.ExecuteReaderAsync();
+                while (await readerDetection.ReadAsync())
+                {
+                    int detectionValue = readerDetection.GetInt32(0);
+                    responseString += $"Your detection went up to {detectionValue} %";
+                }
+            
+        }
 
             else
             {

@@ -144,7 +144,7 @@ public class Server
                 var reader = await cmd2.ExecuteReaderAsync();
                 while (await reader.ReadAsync())
                 {
-                    responseString += reader.GetInt32(0);
+                    responseString += reader.GetInt32(0)
                 }
                 responseString = $"You damaged the firewall";
 

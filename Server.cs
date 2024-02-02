@@ -126,16 +126,17 @@ public class Server
                     responseString += reader.GetString(1) + ", ";
                 }
             }
-            else if (request.HttpMethod == "GET" && path.Contains("hacker_") &&path.Contains("attack/user"))
+            else if (request.HttpMethod == "GET" && path.Contains("hacker/") &&path.Contains("attack/user/"))
             {
                
                 const string qUpdateDetection = "UPDATE users SET detection = detection + 10 WHERE id = $1";
                 const string qReadDetection = "select detection from users where id = $1";
 
-                int hackerId = int.Parse(path.Split("_").GetString(1)); //?? How
+                string[] pathSplit = path.Split("/");
+                int hackerId = int.Parse(pathSplit[2]);
 
-                const string qUpdateFirewall = "UPDATE users SET firewallhealth = firewallhealth - 10 WHERE id = $2";
-                const string qReadFirewall = "select firewallhealth from users where id = $2";
+                const string qUpdateFirewall = "UPDATE users SET firewallhealth = firewallhealth - 10 WHERE id = $1";
+                const string qReadFirewall = "select firewallhealth from users where id = $1";
 
                 int userId = int.Parse(path.Split("/").Last());
 
@@ -156,13 +157,13 @@ public class Server
 
                 //Update Detection
                 var cmdUpdateDetection = _db.CreateCommand(qUpdateDetection);
-                cmdUpdateDetection.Parameters.AddWithValue(hackerID);
+                cmdUpdateDetection.Parameters.AddWithValue(hackerId);
                 await cmdUpdateDetection.ExecuteNonQueryAsync();
 
                 //Read Detection 
 
                 var cmdReadDetection = _db.CreateCommand(qReadDetection);
-                cmdReadDetection.Parameters.AddWithValue(hackerID);
+                cmdReadDetection.Parameters.AddWithValue(hackerId);
                 var readerDetection = await cmdReadDetection.ExecuteReaderAsync();
                 while (await readerDetection.ReadAsync())
                 {

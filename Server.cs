@@ -132,6 +132,9 @@ public class Server
                 const string qUpdateDetection = "UPDATE users SET detection = detection + 10 WHERE id = $1";
                 const string qReadDetection = "select detection from users where id = $1";
 
+                const string qUpdatePoints = "UPDATE users SET points = points + 5 WHERE id = $1";
+                const string qReadPoints = "select points from users where id = $1";
+
                 string[] pathParts = path.Split("/");
                 int attackerId = int.Parse(pathParts[pathParts.Length - 2]);
 
@@ -168,7 +171,23 @@ public class Server
                 while (await readerDetection.ReadAsync())
                 {
                     int detectionValue = readerDetection.GetInt32(0);
-                    responseString += $"Your detection went up to {detectionValue}%. ";
+                    responseString += $"Your detection went up to {detectionValue}% ";
+                }
+
+                //Update Points
+                var cmdUpdatePoints = _db.CreateCommand(qUpdatePoints);
+                cmdUpdatePoints.Parameters.AddWithValue(attackerId);
+                await cmdUpdatePoints.ExecuteNonQueryAsync();
+
+                //Read Poinst 
+
+                var cmdReadPoints = _db.CreateCommand(qReadPoints);
+                cmdReadPoints.Parameters.AddWithValue(attackerId);
+                var readerPoints = await cmdReadPoints.ExecuteReaderAsync();
+                while (await readerPoints.ReadAsync())
+                {
+                    int pointsValue = readerPoints.GetInt32(0);
+                    responseString += $"and your points went up to {pointsValue}. ";
                 }
                 //request: $ curl -X PUT http://localhost:3000/attacker/attackee/x/y -d '[{"Id": x}, {"Id": y}]'
             }

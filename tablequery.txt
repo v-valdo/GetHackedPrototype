@@ -2,6 +2,7 @@
 id SERIAL NOT NULL,
 username TEXT NOT NULL,
 password TEXT NOT NULL,
+keyword TEXT NOT NULL,
 firewallHealth BIGINT NOT NULL DEFAULT '100',
 detection BIGINT DEFAULT '0',
 points BIGINT DEFAULT '0'
@@ -22,3 +23,19 @@ name TEXT NOT NULL
 );
 ALTER TABLE
 software ADD PRIMARY KEY(id);
+CREATE TABLE brute_force(
+id SERIAL NOT NULL,
+hacker INT NOT NULL,
+compromised_player INT NOT NULL,
+cracking TEXT NOT NULL
+);
+ALTER TABLE
+brute_force ADD PRIMARY KEY(id);
+ALTER TABLE brute_force
+ADD CONSTRAINT fk_bf_hacker
+FOREIGN KEY (hacker)
+REFERENCES users (id);
+ALTER TABLE brute_force
+ADD CONSTRAINT fk_bf_cp
+FOREIGN KEY (compromised_player)
+REFERENCES users (id);

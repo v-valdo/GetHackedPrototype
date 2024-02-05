@@ -87,7 +87,7 @@ public class Server
 
                     using (var reader = new StreamReader(body, encoder))
                     {
-                        var cmd = _db.CreateCommand("insert into users (username, password) values ($1, $2) RETURNING id");
+                        var cmd = _db.CreateCommand("insert into users (username, password, keyword) values ($1, $2, $3) RETURNING id");
 
                         string postBody = reader.ReadToEnd();
                         Console.WriteLine(postBody);
@@ -101,11 +101,6 @@ public class Server
                             string column = userParts[0];
                             string value = userParts[1];
 
-                            //date
-                            //value1
-                            //description
-                            //value2
-
                             if (column == "username")
                             {
                                 cmd.Parameters.AddWithValue(value);
@@ -114,6 +109,11 @@ public class Server
                             {
                                 cmd.Parameters.AddWithValue(value);
                             }
+                            else if (column == "keyword")
+                            {
+                                cmd.Parameters.AddWithValue(value);
+                            }
+
                         }
 
                         int userId = (int)await cmd.ExecuteScalarAsync();
@@ -127,7 +127,7 @@ public class Server
                         await insertIpCmd.ExecuteNonQueryAsync();
 
                     }
-                    // insert logic for post (curl -d "username=test&description=test" -X POST http://localhost:3000/data)
+                    // insert logic for post (curl -d "username=test&password=test&keyword=test" -X POST http://localhost:3000/user/register)
                 }
             }
 
@@ -144,8 +144,10 @@ public class Server
                     responseString += reader.GetInt32(0) + ", "; // user id
                     responseString += reader.GetString(1) + ", "; // username
                     responseString += reader.GetString(2) + ", "; // password
-                    responseString += reader.GetInt32(3) + ", "; // firewallhealth
-                    responseString += reader.GetInt32(4) + ", "; // points
+                    responseString += reader.GetString(3) + ", "; // keyword
+                    responseString += reader.GetInt32(4) + ", "; // firewallhealth
+                    responseString += reader.GetInt32(5) + ", "; // detection
+                    responseString += reader.GetInt32(6) + ", "; // points
                 }
             }
 
@@ -176,13 +178,19 @@ public class Server
                 const string qUpdatePoints = "UPDATE users SET points = points + 5 WHERE id = $1";
                 const string qReadPoints = "select points from users where id = $1";
 
-                string[] pathParts = path.Split("/");
-                int attackerId = int.Parse(pathParts[pathParts.Length - 2]);
-
                 const string qUpdateFirewall = "UPDATE users SET firewallhealth = firewallhealth - 10 WHERE id = $1";
                 const string qReadFirewall = "select firewallhealth from users where id = $1";
 
+                const string qReadKeyword = "select keyword from users where id = $1";
+                const string qUdateFirstBF = "INSERT INTO brute_force (hacker, compromised_player, cracking) VALUES ($1, $2, $3);";
+                const string qReadExistingCracking = "SELECT cracking FROM brute_force WHERE hacker = $1 AND compromised_player = $2";
+                const string qUpdateBF = "UPDATE brute_force SET cracking = $1 WHERE hacker = $2 AND compromised_player = $3;";
+
+
                 int attackeeId = int.Parse(path.Split("/").Last());
+
+                string[] pathParts = path.Split("/");
+                int attackerId = int.Parse(pathParts[pathParts.Length - 2]);
 
                 //Update Firewall
                 var cmdUpdateFirewall = _db.CreateCommand(qUpdateFirewall);
@@ -196,7 +204,7 @@ public class Server
                 while (await readerFirewall.ReadAsync())
                 {
                     int firewallHealth = readerFirewall.GetInt32(0);
-                    responseString += $"Your attack was succesfull and your opponent's firewall is now at {firewallHealth}%. ";
+                    responseString += $"Your attack was succesfull. The compromised player's firewall is now at {firewallHealth}%. ";
                 }
 
                 //Update Detection
@@ -219,7 +227,7 @@ public class Server
                 cmdUpdatePoints.Parameters.AddWithValue(attackerId);
                 await cmdUpdatePoints.ExecuteNonQueryAsync();
 
-                //Read Poinst 
+                //Read Points 
 
                 var cmdReadPoints = _db.CreateCommand(qReadPoints);
                 cmdReadPoints.Parameters.AddWithValue(attackerId);
@@ -229,6 +237,31 @@ public class Server
                     int pointsValue = readerPoints.GetInt32(0);
                     responseString += $"and your points went up to {pointsValue}. ";
                 }
+
+                //Get part of keyword
+
+                var cmdReadKeyword = _db.CreateCommand(qReadKeyword);
+                cmdReadKeyword.Parameters.AddWithValue(attackeeId);
+                var readerKeyword = await cmdReadKeyword.ExecuteReaderAsync();
+
+                string firstLetter = "";
+
+                while (await readerKeyword.ReadAsync())
+                    {
+                        string fullKeyword = readerKeyword.GetString(0);
+                        firstLetter = fullKeyword.Substring(0, 1);
+                        responseString += $"The first letter of the compromised player's keyword is '{firstLetter}'";
+                    }
+
+
+                // Save part of keyword in brute force table
+
+                var cmdUpdateBF = _db.CreateCommand(qUpdateBF);
+                cmdUpdateBF.Parameters.AddWithValue(attackerId);
+                cmdUpdateBF.Parameters.AddWithValue(attackeeId);
+                cmdUpdateBF.Parameters.AddWithValue(firstLetter);
+                await cmdUpdateBF.ExecuteNonQueryAsync();
+
                 //request: $ curl -X PUT http://localhost:3000/attacker/attackee/x/y -d '[{"Id": x}, {"Id": y}]'
             }
 

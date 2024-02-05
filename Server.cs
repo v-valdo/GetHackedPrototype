@@ -147,7 +147,19 @@ public class Server
                     responseString += reader.GetInt32(0);
                 }
                 responseString = $"You damaged the firewall";
+            }
 
+            else if (request.HttpMethod == "GET" && path.Contains("heal/user"))
+            {
+                const string qUpdateFirewall = "UPDATE users SET firewallhealth = 100 WHERE id = $1";
+
+                int userId = int.Parse(path.Split("/").Last());
+
+                await using var cmd = _db.CreateCommand(qUpdateFirewall);
+                cmd.Parameters.AddWithValue(userId);
+                await cmd.ExecuteNonQueryAsync();
+
+                responseString = $"You updated your Anti-Virus. Firewall is now back to 100%";
             }
 
             else

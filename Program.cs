@@ -12,13 +12,6 @@ Console.CancelKeyPress += delegate (object? sender, ConsoleCancelEventArgs e)
     Console.WriteLine("Server closed");
 };
 
-List<string> IPList = File.ReadAllLines("IPList.txt").ToList();
-
-foreach (var item in IPList)
-{
-    Console.WriteLine(item);
-}
-
 await using var db = NpgsqlDataSource.Create(dbUri);
 
 Server server = new(db);

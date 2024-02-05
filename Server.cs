@@ -62,8 +62,6 @@ public class Server
 
     private async void Route(IAsyncResult result)
     {
-
-
         if (result.AsyncState is HttpListener listener)
         {
             HttpListenerContext context = _listener.EndGetContext(result);
@@ -169,22 +167,53 @@ public class Server
                     responseString += reader.GetString(1) + ", ";
                 }
             }
-            else if (request.HttpMethod == "PUT" && path.Contains("attacker/attackee/"))
-                    {
 
-                const string qUpdateDetection = "UPDATE users SET detection = detection + 10 WHERE id = $1";
-                const string qReadDetection = "select detection from users where id = $1";
+            //Attack!
+            else if (request.HttpMethod == "PUT" && path.Contains("attack/"))
+            {
+                const string qUpdateFirewall = "UPDATE users SET firewallhealth = firewallhealth - 10 WHERE id = $1";
+                const string qReadFirewall = "select firewallhealth from users where id = $1";
 
                 const string qUpdatePoints = "UPDATE users SET points = points + 5 WHERE id = $1";
                 const string qReadPoints = "select points from users where id = $1";
 
-                string[] pathParts = path.Split("/");
-                int attackerId = int.Parse(pathParts[pathParts.Length - 2]);
+                //const string qUpdateDetection = "UPDATE users SET detection = detection + 20 WHERE id = $1";
+                const string qUpdateDetection = "UPDATE users SET detection = CASE WHEN (detection + 20) <= 100 THEN (detection + 20) ELSE 100 END WHERE id = $1";
+                const string qReadDetection = "select detection from users where id = $1";
 
-                const string qUpdateFirewall = "UPDATE users SET firewallhealth = firewallhealth - 10 WHERE id = $1";
-                const string qReadFirewall = "select firewallhealth from users where id = $1";
+                const string qIdByIP = "SELECT userID FROM IP WHERE address = $1";
 
-                int attackeeId = int.Parse(path.Split("/").Last());
+                int attackerId = 0;
+                int attackeeId = 0;
+                string attackeeIP = string.Empty;
+
+                using (var reader = new StreamReader(request.InputStream))
+                {
+                    var requestBody = await reader.ReadToEndAsync();
+                    string[] idArray = requestBody.Split(',').Select(part => part.Trim()).ToArray();
+
+                    if (idArray.Length >= 2)
+                    {
+                        attackerId = int.Parse(idArray[0].Trim());
+                        attackeeIP = idArray[1];
+                    }
+                    else
+                    {
+                        responseString = "Error: Invalid data input.";
+                    }
+                }
+
+                //Get ID
+                var cmdIdByIP = _db.CreateCommand(qIdByIP);
+                cmdIdByIP.Parameters.AddWithValue(attackeeIP);
+
+                using (var readerIdByIP = await cmdIdByIP.ExecuteReaderAsync())
+                {
+                    if (await readerIdByIP.ReadAsync())
+                    {
+                        attackeeId = readerIdByIP.GetInt32(0);
+                    }
+                }
 
                 //Update Firewall
                 var cmdUpdateFirewall = _db.CreateCommand(qUpdateFirewall);
@@ -195,47 +224,55 @@ public class Server
                 var cmdReadFirewall = _db.CreateCommand(qReadFirewall);
                 cmdReadFirewall.Parameters.AddWithValue(attackeeId);
                 var readerFirewall = await cmdReadFirewall.ExecuteReaderAsync();
-                while (await readerFirewall.ReadAsync())
-                {
-                    int firewallHealth = readerFirewall.GetInt32(0);
-                    responseString += $"Your attack was succesfull and your opponent's firewall is now at {firewallHealth}%. ";
+                    while (await readerFirewall.ReadAsync())
+                    {
+                        int firewallHealth = readerFirewall.GetInt32(0);
+                        responseString += $"Your attack was succesfull and your opponent's firewall is now at {firewallHealth}%. ";
+                    }
+
+                 //Update Points
+                 var cmdUpdatePoints = _db.CreateCommand(qUpdatePoints);
+                 cmdUpdatePoints.Parameters.AddWithValue(attackerId);
+                 await cmdUpdatePoints.ExecuteNonQueryAsync();
+
+                 //Read Points 
+                 var cmdReadPoints = _db.CreateCommand(qReadPoints);
+                 cmdReadPoints.Parameters.AddWithValue(attackerId);
+                 var readerPoints = await cmdReadPoints.ExecuteReaderAsync();
+                    while (await readerPoints.ReadAsync())
+                    {
+                        int pointsValue = readerPoints.GetInt32(0);
+                        responseString += $"Your points went up to {pointsValue} ";
+                    }
+
+                 //Update Detection
+                 var cmdUpdateDetection = _db.CreateCommand(qUpdateDetection);
+                 cmdUpdateDetection.Parameters.AddWithValue(attackerId);
+                 await cmdUpdateDetection.ExecuteNonQueryAsync();
+
+                 //Read Detection 
+                 int detectionValue;
+                 var cmdReadDetection = _db.CreateCommand(qReadDetection);
+                 cmdReadDetection.Parameters.AddWithValue(attackerId);
+                 var readerDetection = await cmdReadDetection.ExecuteReaderAsync();
+
+                    while (await readerDetection.ReadAsync())
+                    {
+                        detectionValue = readerDetection.GetInt32(0);
+                        if (detectionValue < 100)
+                        {
+                            responseString += $"and your detection went up to {detectionValue}%. ";
+                        }
+                        else
+                        {
+                            responseString = $"Game over - your detection level reached 100%!";
+                        }
+
+                    }
+                    //curl -X PUT http://localhost:3000/attack/ -d 'myuserId,attackeesIPaddress'
                 }
+            
 
-                //Update Detection
-                var cmdUpdateDetection = _db.CreateCommand(qUpdateDetection);
-                cmdUpdateDetection.Parameters.AddWithValue(attackerId);
-                await cmdUpdateDetection.ExecuteNonQueryAsync();
-
-                //Read Detection 
-
-                var cmdReadDetection = _db.CreateCommand(qReadDetection);
-                cmdReadDetection.Parameters.AddWithValue(attackerId);
-                var readerDetection = await cmdReadDetection.ExecuteReaderAsync();
-                while (await readerDetection.ReadAsync())
-                {
-                    int detectionValue = readerDetection.GetInt32(0);
-                    responseString += $"Your detection went up to {detectionValue}% ";
-                }
-                //Update Points
-                var cmdUpdatePoints = _db.CreateCommand(qUpdatePoints);
-                cmdUpdatePoints.Parameters.AddWithValue(attackerId);
-                await cmdUpdatePoints.ExecuteNonQueryAsync();
-
-                //Read Poinst 
-
-                var cmdReadPoints = _db.CreateCommand(qReadPoints);
-                cmdReadPoints.Parameters.AddWithValue(attackerId);
-                var readerPoints = await cmdReadPoints.ExecuteReaderAsync();
-                while (await readerPoints.ReadAsync())
-                {
-                    int pointsValue = readerPoints.GetInt32(0);
-                    responseString += $"and your points went up to {pointsValue}. ";
-                }
-                //request: $ curl -X PUT http://localhost:3000/attacker/attackee/x/y -d '[{"Id": x}, {"Id": y}]'
-
-                responseString = $"You damaged the firewall";
-            }
-          
             else if (request.HttpMethod == "PATCH" && path.Contains("heal/user"))
             {
                 const string qUpdateFirewall = "UPDATE users SET firewallhealth = firewallhealth + 1 WHERE id = $1";

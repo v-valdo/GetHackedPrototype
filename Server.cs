@@ -116,14 +116,12 @@ public class Server
                             }
                         }
 
-                        await cmd.ExecuteNonQueryAsync();
-
                         int userId = (int)await cmd.ExecuteScalarAsync();
 
                         IPAddress ip = new();
                         string userIp = ip.Generate();
 
-                        var insertIpCmd = _db.CreateCommand("INSERT INTO ip (userid, address) VALUES ($1, $2)");
+                        var insertIpCmd = _db.CreateCommand("INSERT INTO IP (userid, address) VALUES ($1, $2)");
                         insertIpCmd.Parameters.AddWithValue(userId);
                         insertIpCmd.Parameters.AddWithValue(userIp);
                         await insertIpCmd.ExecuteNonQueryAsync();
@@ -170,7 +168,7 @@ public class Server
                 }
             }
             else if (request.HttpMethod == "PUT" && path.Contains("attacker/attackee/"))
-                    {
+            {
 
                 const string qUpdateDetection = "UPDATE users SET detection = detection + 10 WHERE id = $1";
                 const string qReadDetection = "select detection from users where id = $1";
@@ -233,7 +231,7 @@ public class Server
                 }
                 //request: $ curl -X PUT http://localhost:3000/attacker/attackee/x/y -d '[{"Id": x}, {"Id": y}]'
             }
-          
+
             else if (request.HttpMethod == "PATCH" && path.Contains("heal/user"))
             {
                 const string qUpdateFirewall = "UPDATE users SET firewallhealth = firewallhealth + 1 WHERE id = $1";

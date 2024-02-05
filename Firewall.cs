@@ -12,7 +12,7 @@ public class Firewall
         _db = db;
     }
 
-    public void StartUpdate(int userId)
+    public void StartUpdateTimer(int userId)
     {
         if (firewallUpdateTimer == null)
         {
@@ -23,15 +23,12 @@ public class Firewall
 
     private void Update(object state)
     {
-        // Extract the userId from the state object
         int userId = (int)state;
 
-        // You can use userId in your update logic
         const string qUpdateFirewall = "UPDATE users SET firewallhealth = firewallhealth + 1 WHERE id = $1";
 
         try
         {
-            // Use userId in your query and execute the update synchronously
             using var cmd = _db.CreateCommand(qUpdateFirewall);
             cmd.Parameters.AddWithValue(userId);
             cmd.ExecuteNonQuery();

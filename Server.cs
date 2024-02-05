@@ -210,9 +210,11 @@ public class Server
             else if (request.HttpMethod == "PATCH" && path.Contains("heal/user"))
             {
                 int userId = int.Parse(path.Split("/").Last());
-                _firewall.StartUpdate(userId);
+                _firewall.StartUpdateTimer(userId);
+            
+                //request: $  curl -X PATCH http://localhost:3000/heal/user
             }
-            //request: $  curl -X PATCH http://localhost:3000/heal/user
+
             else
             {
                 responseString = "Nothing here...";

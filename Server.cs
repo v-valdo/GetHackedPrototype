@@ -34,7 +34,6 @@ public class Server
     {
         if (result.AsyncState is HttpListener listener)
         {
-
             HttpListenerContext context = _listener.EndGetContext(result);
             HttpListenerRequest request = context.Request;
 
@@ -56,7 +55,7 @@ public class Server
 
                     using (var reader = new StreamReader(body, encoder))
                     {
-                        var cmd = _db.CreateCommand("insert into users (username, password) values ($1, $2)");
+                        var cmd = _db.CreateCommand("insert into users (username, password) values ($1, $2) RETURNING id");
 
                         string postBody = reader.ReadToEnd();
                         Console.WriteLine(postBody);
@@ -84,7 +83,19 @@ public class Server
                                 cmd.Parameters.AddWithValue(value);
                             }
                         }
+
                         await cmd.ExecuteNonQueryAsync();
+
+                        int userId = (int)await cmd.ExecuteScalarAsync();
+
+                        IPAddress ip = new();
+                        string userIp = ip.Generate();
+
+                        var insertIpCmd = _db.CreateCommand("INSERT INTO ip (userid, address) VALUES ($1, $2)");
+                        insertIpCmd.Parameters.AddWithValue(userId);
+                        insertIpCmd.Parameters.AddWithValue(userIp);
+                        await insertIpCmd.ExecuteNonQueryAsync();
+
                     }
                     // insert logic for post (curl -d "username=test&description=test" -X POST http://localhost:3000/data)
                 }
@@ -196,15 +207,16 @@ public class Server
             else if (request.HttpMethod == "GET" && path.Contains("heal/user"))
             {
                 const string qUpdateFirewall = "UPDATE users SET firewallhealth = 100 WHERE id = $1";
-
                 int userId = int.Parse(path.Split("/").Last());
 
                 await using var cmd = _db.CreateCommand(qUpdateFirewall);
                 cmd.Parameters.AddWithValue(userId);
                 await cmd.ExecuteNonQueryAsync();
 
+            }
                 responseString = $"You updated your Anti-Virus. Firewall is now back to 100%";
             }
+
             else
             {
                 responseString = "Nothing here...";

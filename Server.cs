@@ -232,8 +232,6 @@ public class Server
                     responseString += $"and your points went up to {pointsValue}. ";
                 }
                 //request: $ curl -X PUT http://localhost:3000/attacker/attackee/x/y -d '[{"Id": x}, {"Id": y}]'
-
-                responseString = $"You damaged the firewall";
             }
           
             else if (request.HttpMethod == "PATCH" && path.Contains("heal/user"))

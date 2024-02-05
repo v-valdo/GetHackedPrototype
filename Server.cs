@@ -1,5 +1,4 @@
-﻿using Npgsql;
-using System;
+using Npgsql;
 using System.Net;
 using System.Text;
 
@@ -138,42 +137,85 @@ public class Server
                     responseString += reader.GetString(1) + ", ";
                 }
             }
-            else if (request.HttpMethod == "GET" && path.Contains("attack/user"))
-            {
+            else if (request.HttpMethod == "PUT" && path.Contains("attacker/attackee/"))
+                    {
+
+                const string qUpdateDetection = "UPDATE users SET detection = detection + 10 WHERE id = $1";
+                const string qReadDetection = "select detection from users where id = $1";
+
+                const string qUpdatePoints = "UPDATE users SET points = points + 5 WHERE id = $1";
+                const string qReadPoints = "select points from users where id = $1";
+
+                string[] pathParts = path.Split("/");
+                int attackerId = int.Parse(pathParts[pathParts.Length - 2]);
+
                 const string qUpdateFirewall = "UPDATE users SET firewallhealth = firewallhealth - 10 WHERE id = $1";
                 const string qReadFirewall = "select firewallhealth from users where id = $1";
 
-                int userId = int.Parse(path.Split("/").Last());
+                int attackeeId = int.Parse(path.Split("/").Last());
 
-                await using var cmd = _db.CreateCommand(qUpdateFirewall);
-                cmd.Parameters.AddWithValue(userId);
-                await cmd.ExecuteNonQueryAsync();
+                //Update Firewall
+                var cmdUpdateFirewall = _db.CreateCommand(qUpdateFirewall);
+                cmdUpdateFirewall.Parameters.AddWithValue(attackeeId);
+                await cmdUpdateFirewall.ExecuteNonQueryAsync();
 
-
-                var cmd2 = _db.CreateCommand(qReadFirewall);
-                cmd2.Parameters.AddWithValue(userId);
-
-                var reader = await cmd2.ExecuteReaderAsync();
-                while (await reader.ReadAsync())
+                //Read Firewall
+                var cmdReadFirewall = _db.CreateCommand(qReadFirewall);
+                cmdReadFirewall.Parameters.AddWithValue(attackeeId);
+                var readerFirewall = await cmdReadFirewall.ExecuteReaderAsync();
+                while (await readerFirewall.ReadAsync())
                 {
-                    responseString += reader.GetInt32(0);
+                    int firewallHealth = readerFirewall.GetInt32(0);
+                    responseString += $"Your attack was succesfull and your opponent's firewall is now at {firewallHealth}%. ";
                 }
-                responseString = $"You damaged the firewall";
 
+                //Update Detection
+                var cmdUpdateDetection = _db.CreateCommand(qUpdateDetection);
+                cmdUpdateDetection.Parameters.AddWithValue(attackerId);
+                await cmdUpdateDetection.ExecuteNonQueryAsync();
+
+                //Read Detection 
+
+                var cmdReadDetection = _db.CreateCommand(qReadDetection);
+                cmdReadDetection.Parameters.AddWithValue(attackerId);
+                var readerDetection = await cmdReadDetection.ExecuteReaderAsync();
+                while (await readerDetection.ReadAsync())
+                {
+                    int detectionValue = readerDetection.GetInt32(0);
+                    responseString += $"Your detection went up to {detectionValue}% ";
+                }
+                //Update Points
+                var cmdUpdatePoints = _db.CreateCommand(qUpdatePoints);
+                cmdUpdatePoints.Parameters.AddWithValue(attackerId);
+                await cmdUpdatePoints.ExecuteNonQueryAsync();
+
+                //Read Poinst 
+
+                var cmdReadPoints = _db.CreateCommand(qReadPoints);
+                cmdReadPoints.Parameters.AddWithValue(attackerId);
+                var readerPoints = await cmdReadPoints.ExecuteReaderAsync();
+                while (await readerPoints.ReadAsync())
+                {
+                    int pointsValue = readerPoints.GetInt32(0);
+                    responseString += $"and your points went up to {pointsValue}. ";
+                }
+                //request: $ curl -X PUT http://localhost:3000/attacker/attackee/x/y -d '[{"Id": x}, {"Id": y}]'
+
+                responseString = $"You damaged the firewall";
             }
 
             else if (request.HttpMethod == "GET" && path.Contains("heal/user"))
             {
                 const string qUpdateFirewall = "UPDATE users SET firewallhealth = 100 WHERE id = $1";
-
-
                 int userId = int.Parse(path.Split("/").Last());
 
                 await using var cmd = _db.CreateCommand(qUpdateFirewall);
                 cmd.Parameters.AddWithValue(userId);
                 await cmd.ExecuteNonQueryAsync();
-            }
 
+            }
+                responseString = $"You updated your Anti-Virus. Firewall is now back to 100%";
+            }
 
             else
             {

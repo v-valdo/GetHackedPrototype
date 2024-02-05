@@ -9,14 +9,16 @@ public class Server
     private readonly NpgsqlDataSource? _db;
     public int port = 3000;
     private HttpListener _listener = new();
-    private Timer firewallUpdateTimer;
+
+    private Firewall _firewall;
 
     public Server(NpgsqlDataSource db)
     {
         _db = db;
+        _firewall = new Firewall(db);
     }
 
-    public void Start()
+        public void Start()
     {
         _listener.Prefixes.Add($"http://localhost:{port}/");
         _listener.Start();
@@ -31,34 +33,7 @@ public class Server
         _listener.Stop();
     }
 
-    private void StartPeriodicUpdate()
-    {
-        // Start the periodic update if not already started
-        if (firewallUpdateTimer == null)
-        {
-            firewallUpdateTimer = new Timer(UpdateFirewallPeriodically, null, TimeSpan.Zero, TimeSpan.FromMinutes(1));
-            Console.WriteLine("Periodic firewall health update started.");
-        }
-    }
 
-    public async void UpdateFirewallPeriodically(object state)
-    {
-        const string qUpdateFirewall = "UPDATE users SET firewallhealth = firewallhealth + 1 WHERE firewallhealth < 100";
-
-        try
-        {
-
-            await using var cmd = _db.CreateCommand(qUpdateFirewall);
-            await cmd.ExecuteNonQueryAsync();
-        }
-        catch (Exception ex)
-        {
-            // Handle exceptions (e.g., log the error)
-            Console.WriteLine($"Error updating firewall health: {ex.Message}");
-        }
-
-        Console.WriteLine($"Firewall health has been updated periodically. Current time: {DateTime.Now}");
-    }
 
     private async void Route(IAsyncResult result)
     {
@@ -234,20 +209,10 @@ public class Server
 
             else if (request.HttpMethod == "PATCH" && path.Contains("heal/user"))
             {
-                const string qUpdateFirewall = "UPDATE users SET firewallhealth = firewallhealth + 1 WHERE id = $1";
-                StartPeriodicUpdate();
-                UpdateFirewallPeriodically(null);
-                //const string qUpdateFirewall = "UPDATE users SET firewallhealth = firewallhealth + 1 WHERE firewallhealth < 100";
-
                 int userId = int.Parse(path.Split("/").Last());
-
-                await using var cmd = _db.CreateCommand(qUpdateFirewall);
-                cmd.Parameters.AddWithValue(userId);
-                await cmd.ExecuteNonQueryAsync();
-
-                //responseString = $"You updated your Anti-Virus in time. Firewall is now back to 100%";
+                _firewall.StartUpdate(userId);
             }
-
+            //request: $  curl -X PATCH http://localhost:3000/heal/user
             else
             {
                 responseString = "Nothing here...";

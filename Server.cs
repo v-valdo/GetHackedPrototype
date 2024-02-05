@@ -1,4 +1,4 @@
-﻿using Npgsql;
+using Npgsql;
 using System.Net;
 using System.Text;
 
@@ -173,7 +173,6 @@ public class Server
                     int detectionValue = readerDetection.GetInt32(0);
                     responseString += $"Your detection went up to {detectionValue}% ";
                 }
-
                 //Update Points
                 var cmdUpdatePoints = _db.CreateCommand(qUpdatePoints);
                 cmdUpdatePoints.Parameters.AddWithValue(attackerId);
@@ -190,8 +189,22 @@ public class Server
                     responseString += $"and your points went up to {pointsValue}. ";
                 }
                 //request: $ curl -X PUT http://localhost:3000/attacker/attackee/x/y -d '[{"Id": x}, {"Id": y}]'
+
+                responseString = $"You damaged the firewall";
             }
 
+            else if (request.HttpMethod == "GET" && path.Contains("heal/user"))
+            {
+                const string qUpdateFirewall = "UPDATE users SET firewallhealth = 100 WHERE id = $1";
+
+                int userId = int.Parse(path.Split("/").Last());
+
+                await using var cmd = _db.CreateCommand(qUpdateFirewall);
+                cmd.Parameters.AddWithValue(userId);
+                await cmd.ExecuteNonQueryAsync();
+
+                responseString = $"You updated your Anti-Virus. Firewall is now back to 100%";
+            }
             else
             {
                 responseString = "Nothing here...";

@@ -62,8 +62,6 @@ public class Server
 
     private async void Route(IAsyncResult result)
     {
-
-
         if (result.AsyncState is HttpListener listener)
         {
             HttpListenerContext context = _listener.EndGetContext(result);
@@ -125,48 +123,11 @@ public class Server
                         insertIpCmd.Parameters.AddWithValue(userId);
                         insertIpCmd.Parameters.AddWithValue(userIp);
                         await insertIpCmd.ExecuteNonQueryAsync();
-
                     }
                     // insert logic for post (curl -d "username=test&description=test" -X POST http://localhost:3000/data)
                 }
             }
 
-            // view all users
-            else if (request.HttpMethod == "GET" && path.Contains("users/all"))
-            {
-                const string qUsers = "select * from users";
-
-                var cmd = _db.CreateCommand(qUsers);
-                var reader = await cmd.ExecuteReaderAsync();
-
-                while (await reader.ReadAsync())
-                {
-                    responseString += reader.GetInt32(0) + ", "; // user id
-                    responseString += reader.GetString(1) + ", "; // username
-                    responseString += reader.GetString(2) + ", "; // password
-                    responseString += reader.GetInt32(3) + ", "; // firewallhealth
-                    responseString += reader.GetInt32(4) + ", "; // points
-                }
-            }
-
-            // Query specific users
-            else if (request.HttpMethod == "GET" && path.Contains("users/id"))
-            {
-                const string qTodo = "select username, password from users where id = $1";
-
-                var cmd = _db?.CreateCommand(qTodo);
-
-                int userId = int.Parse(path.Split("/").Last());
-
-                cmd?.Parameters.AddWithValue(userId);
-
-                var reader = await cmd.ExecuteReaderAsync();
-                while (await reader.ReadAsync())
-                {
-                    responseString += reader.GetString(0) + ", ";
-                    responseString += reader.GetString(1) + ", ";
-                }
-            }
             else if (request.HttpMethod == "PUT" && path.Contains("attacker/attackee/"))
             {
 
@@ -248,6 +209,33 @@ public class Server
                 //responseString = $"You updated your Anti-Virus in time. Firewall is now back to 100%";
             }
 
+            //IPScanner
+            else if (request.HttpMethod == "GET" && path.Contains("/user/") && path.Contains("/software/ipscanner.exe"))
+            {
+                const string qFindIP = "select address from ip";
+                const string qDetection = "update users set detection = detection + 10 where id = $1 RETURNING detection";
+
+                var cmdFindIP = _db.CreateCommand(qFindIP);
+                var cmdRaiseDetection = _db.CreateCommand(qDetection);
+
+                int userId = int.Parse(path.Split("/")[2]);
+
+                cmdRaiseDetection.Parameters.AddWithValue(userId);
+
+                var readIPs = await cmdFindIP.ExecuteReaderAsync();
+
+                while (await readIPs.ReadAsync())
+                {
+                    responseString += "IP address found: " + readIPs.GetString(0) + "\n";
+                }
+
+                var updatedDetection = await cmdRaiseDetection.ExecuteScalarAsync();
+
+                responseString += "\nYour risk of detection is now: " + updatedDetection;
+
+                // curl -X GET localhost:3000/user/<id>/software/ip-scanner.exe
+
+            }
             else
             {
                 responseString = "Nothing here...";

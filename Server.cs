@@ -182,8 +182,9 @@ public class Server
                 const string qReadFirewall = "select firewallhealth from users where id = $1";
 
                 const string qReadKeyword = "select keyword from users where id = $1";
-                const string qUdateFirstBF = "INSERT INTO brute_force (hacker, compromised_player, cracking) VALUES ($1, $2, $3);";
-                const string qReadExistingCracking = "SELECT cracking FROM brute_force WHERE hacker = $1 AND compromised_player = $2";
+                const string qCheckBF = "SELECT COUNT (*) FROM brute_force WHERE hacker = $1 AND compromised_player = $2";
+                const string qInsertBF = "INSERT INTO brute_force (hacker, compromised_player, cracking) VALUES ($1, $2, $3);";
+                const string qReadCurrentCracking = "SELECT cracking FROM brute_force WHERE hacker = $1 AND compromised_player = $2";
                 const string qUpdateBF = "UPDATE brute_force SET cracking = $1 WHERE hacker = $2 AND compromised_player = $3;";
 
 
@@ -240,27 +241,73 @@ public class Server
 
                 //Get part of keyword
 
-                var cmdReadKeyword = _db.CreateCommand(qReadKeyword);
-                cmdReadKeyword.Parameters.AddWithValue(attackeeId);
-                var readerKeyword = await cmdReadKeyword.ExecuteReaderAsync();
+                    //Check if attack already exists in brute_force table, if not insert
 
-                string firstLetter = "";
+                var cmdCheckBF = _db.CreateCommand(qCheckBF);
+                cmdCheckBF.Parameters.AddWithValue(attackerId);
+                cmdCheckBF.Parameters.AddWithValue(attackeeId);
+                var rowCount = await cmdCheckBF.ExecuteScalarAsync();
 
-                while (await readerKeyword.ReadAsync())
+                int rowCountInt = Convert.ToInt32(rowCount);
+
+                if (rowCountInt == 0)
+                {
+                    var cmdReadKeyword = _db.CreateCommand(qReadKeyword);
+                    cmdReadKeyword.Parameters.AddWithValue(attackeeId);
+                    var readerKeyword = await cmdReadKeyword.ExecuteReaderAsync();
+
+                    string firstLetter = "";
+
+                    while (await readerKeyword.ReadAsync())
                     {
                         string fullKeyword = readerKeyword.GetString(0);
                         firstLetter = fullKeyword.Substring(0, 1);
                         responseString += $"The first letter of the compromised player's keyword is '{firstLetter}'";
                     }
 
+                    // INSERT values INTO brute force table
 
-                // Save part of keyword in brute force table
+                    var cmdUpdateBF = _db.CreateCommand(qInsertBF);
+                    cmdUpdateBF.Parameters.AddWithValue(attackerId);
+                    cmdUpdateBF.Parameters.AddWithValue(attackeeId);
+                    cmdUpdateBF.Parameters.AddWithValue(firstLetter);
+                    await cmdUpdateBF.ExecuteNonQueryAsync();
+                }
 
-                var cmdUpdateBF = _db.CreateCommand(qUpdateBF);
-                cmdUpdateBF.Parameters.AddWithValue(attackerId);
-                cmdUpdateBF.Parameters.AddWithValue(attackeeId);
-                cmdUpdateBF.Parameters.AddWithValue(firstLetter);
-                await cmdUpdateBF.ExecuteNonQueryAsync();
+                else
+
+                {
+                    // Read the existing cracking value and add new letter
+                    var cmdReadCurrentCracking = _db.CreateCommand(qReadCurrentCracking);
+                    cmdReadCurrentCracking.Parameters.AddWithValue(attackerId);
+                    cmdReadCurrentCracking.Parameters.AddWithValue(attackeeId);
+                    var currentCracking = await cmdReadCurrentCracking.ExecuteScalarAsync() as string;
+
+                    var cmdReadKeyword = _db.CreateCommand(qReadKeyword);
+                    cmdReadKeyword.Parameters.AddWithValue(attackeeId);
+                    var CPKeyword = await cmdReadKeyword.ExecuteScalarAsync() as string;
+
+                    char[] Keyword = CPKeyword.ToCharArray();
+
+                    string newCracking = currentCracking + Keyword[currentCracking.Length];
+
+                    // Update cracking
+                    var cmdUpdateBF = _db.CreateCommand(qUpdateBF);
+                    cmdUpdateBF.Parameters.AddWithValue(newCracking);
+                    cmdUpdateBF.Parameters.AddWithValue(attackerId);
+                    cmdUpdateBF.Parameters.AddWithValue(attackeeId);
+                    await cmdUpdateBF.ExecuteNonQueryAsync();
+
+                    //Read New Cracking
+                    var cmdReadNewCracking = _db.CreateCommand(qReadCurrentCracking);
+                    cmdReadNewCracking.Parameters.AddWithValue(attackerId);
+                    cmdReadNewCracking.Parameters.AddWithValue(attackeeId);
+                    var ReaderNewCracking = await cmdReadNewCracking.ExecuteReaderAsync();
+                    while (await ReaderNewCracking.ReadAsync())
+                    {
+                        responseString += $"You added a new letter to the keyword:'{newCracking}'";
+                    }
+                }
 
                 //request: $ curl -X PUT http://localhost:3000/attacker/attackee/x/y -d '[{"Id": x}, {"Id": y}]'
             }

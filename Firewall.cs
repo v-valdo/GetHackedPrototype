@@ -25,7 +25,7 @@ public class Firewall
     {
         int userId = (int)state;
 
-        const string qUpdateFirewall = "UPDATE users SET firewallhealth = firewallhealth + 1 WHERE id = $1";
+        const string qUpdateFirewall = "UPDATE users SET firewallhealth = firewallhealth + 1 WHERE id = $1 && firewallhealth < 100";
 
         try
         {

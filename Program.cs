@@ -12,7 +12,6 @@ Console.CancelKeyPress += delegate (object? sender, ConsoleCancelEventArgs e)
     Console.WriteLine("Server closed");
 };
 
-
 await using var db = NpgsqlDataSource.Create(dbUri);
 
 Server server = new(db);
@@ -23,4 +22,8 @@ listen = true;
 
 while (listen) { }
 
+<<<<<<< HEAD
 server.Stop(); 
+=======
+server.Stop();
+>>>>>>> 0e38d0f3649ae8b28151d822e132347be7e6474a

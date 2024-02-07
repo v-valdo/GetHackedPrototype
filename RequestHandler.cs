@@ -19,9 +19,8 @@ public class RequestHandler
     {
         _listener.Prefixes.Add($"http://localhost:{port}/");
         _listener.Start();
-        Console.WriteLine($"Server open on port {port}");
+        Console.WriteLine($"Server listening on port {port}");
         _listener.BeginGetContext(new AsyncCallback(Route), _listener);
-
     }
 
     public void Stop()
@@ -54,8 +53,8 @@ public class RequestHandler
         string message = "";
         var path = request.Url?.AbsolutePath ?? "404";
 
-        // Example of get
-        if (path.Contains("user/all"))
+        // Remove this, just example
+        if (path.Contains("users/all"))
         {
             string qUsers = "select username,password from users;";
             var reader = await _db.CreateCommand(qUsers).ExecuteReaderAsync();
@@ -65,7 +64,6 @@ public class RequestHandler
                 message += $"Username: {reader.GetString(0)}, Password: {reader.GetString(1)}";
             }
         }
-
 
         // Finally prints response (message)
         Print(response, message);
@@ -79,10 +77,11 @@ public class RequestHandler
         StreamReader reader = new(request.InputStream, request.ContentEncoding);
         string data = reader.ReadToEnd();
 
-        if (path.Contains("user/register"))
+        // Remove this, just example
+        if (path.Contains("users/register"))
         {
             string qRegister = "insert into users(username,password) values ($1, $2)";
-            var cmd = _db.CreateCommand(qRegister);
+            await using var cmd = _db.CreateCommand(qRegister);
 
             string[] parts = data.Split("&");
 
@@ -107,6 +106,7 @@ public class RequestHandler
                     cmd.Parameters.AddWithValue(value);
                 }
             }
+            await cmd.ExecuteNonQueryAsync();
 
             // Finally prints response (message
             Print(response, message);

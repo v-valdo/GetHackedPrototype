@@ -18,8 +18,9 @@ RequestHandler requestHandler = new(db);
 
 try
 {
+    requestHandler.Start();
     while (listen) { };
-
+    requestHandler.Stop();
 }
 finally
 {

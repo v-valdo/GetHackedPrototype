@@ -78,6 +78,7 @@ public class RequestHandler
 
         StreamReader reader = new(request.InputStream, request.ContentEncoding);
         string data = reader.ReadToEnd();
+        Console.WriteLine(data);
 
         // Remove this, just example
         if (path.Contains("users/register"))

@@ -40,9 +40,11 @@ public class RequestHandler
         {
             // routing request types to methods? mb better?
             case "GET":
+                Console.WriteLine($"get request received - {request.RawUrl}");
                 await Get(response, request);
                 break;
             case "POST":
+                Console.WriteLine($"post request received");
                 await Post(response, request);
                 break;
         }

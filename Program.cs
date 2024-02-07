@@ -22,8 +22,6 @@ listen = true;
 
 while (listen) { }
 
-<<<<<<< HEAD
 server.Stop(); 
-=======
-server.Stop();
->>>>>>> 0e38d0f3649ae8b28151d822e132347be7e6474a
+
+

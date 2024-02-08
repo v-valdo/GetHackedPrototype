@@ -1,4 +1,5 @@
 ﻿using Npgsql;
+using Npgsql.Replication.PgOutput.Messages;
 using System.Net;
 using System.Text;
 using static System.Net.Mime.MediaTypeNames;
@@ -86,25 +87,27 @@ public class RequestHandler
             string qAddDummy = "INSERT INTO dummy_password(user_id,dummy_pass,keyword) VALUES ($1, $2, $3)";
             string qAddIp = "INSERT INTO ip(address,user_id) VALUES ($1, $2)";
 
+            //INSERT into user table
             await using var cmd = _db.CreateCommand(qRegister);
             string[] parts = data.Split(",");
-            cmd.Parameters.AddWithValue(parts[0]);
-            cmd.Parameters.AddWithValue(parts[1]);
+            cmd.Parameters.AddWithValue(parts[0]); //username
+            cmd.Parameters.AddWithValue(parts[1]); //password
 
             int userId = (int)await cmd.ExecuteScalarAsync();
-
+            
+            //INSERT into dummy_password table
             await using var cmd2 = _db.CreateCommand(qAddDummy);
-            cmd2.Parameters.AddWithValue(userId);
-            cmd2.Parameters.AddWithValue(parts[2]);
-            cmd2.Parameters.AddWithValue(parts[3]);
+            cmd2.Parameters.AddWithValue(userId); //user id
+            cmd2.Parameters.AddWithValue(parts[2]); //dummy password
+            cmd2.Parameters.AddWithValue(parts[3]); //keyword
             await cmd2.ExecuteNonQueryAsync();
 
+            //INSERT into ip table
             IPAddress generatedIP = Generate();
             string userIp = generatedIP.ToString();
-
             await using var cmd3 = _db.CreateCommand(qAddIp);
-            cmd3.Parameters.AddWithValue(userIp);
-            cmd3.Parameters.AddWithValue(userId);
+            cmd3.Parameters.AddWithValue(userIp); //user ip
+            cmd3.Parameters.AddWithValue(userId); //user id
             await cmd3.ExecuteNonQueryAsync();
 
             // Finally prints response, message

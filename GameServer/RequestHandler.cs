@@ -49,7 +49,6 @@ public class RequestHandler
                 break;
         }
     }
-
     private async Task Get(HttpListenerResponse response, HttpListenerRequest request)
     {
         string message = "";

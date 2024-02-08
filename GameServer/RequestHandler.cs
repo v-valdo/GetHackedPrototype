@@ -79,14 +79,18 @@ public class RequestHandler
         StreamReader reader = new(request.InputStream, request.ContentEncoding);
         string data = reader.ReadToEnd();
 
-        // Remove this, just example
+        // register
         if (path.Contains("users/register"))
         {
-            string qRegister = "insert into users(username,password) values ($1, $2)";
+            string qRegister = "insert into users(username,password) values ($1, $2) RETURNING id";
             await using var cmd = _db.CreateCommand(qRegister);
 
-            string[] parts = data.Split("&");
-
+            string[] parts = data.Split(",");
+            for (int i = 0; i < 2; i++)
+            {
+                cmd.Parameters.AddWithValue(parts[i]);
+            }     
+            /*string[] parts = data.Split("&");
             foreach (var part in parts)
             {
                 string[] dateDescription = part.Split("=");
@@ -98,6 +102,10 @@ public class RequestHandler
                 //value1
                 //password
                 //value2
+                //dummy_pass
+                //value3
+                //keyword
+                //value4
 
                 if (column == "username")
                 {
@@ -107,8 +115,32 @@ public class RequestHandler
                 {
                     cmd.Parameters.AddWithValue(value);
                 }
-            }
+                else if (column == "dummy_pass")
+                {
+                    cmd2.Parameters.AddWithValue(value);
+                }
+                else if (column == "keyword")
+                {
+                    cmd2.Parameters.AddWithValue(value);
+                }
+            }*/
+
             await cmd.ExecuteNonQueryAsync();
+            int userId = (int)await cmd.ExecuteScalarAsync();
+
+            //IPAddress ip = new();
+            //string userIp = ip.Generate();
+            //var insertIpCmd = _db.CreateCommand("INSERT INTO ip (userid, address) VALUES ($1, $2)");
+
+
+            var insertDummyCmd = _db.CreateCommand("INSERT INTO dummy_password(user_id,dummy_pass, keyword) VALUES ($1, $2, $3)");
+            insertDummyCmd.Parameters.AddWithValue(userId);
+            insertDummyCmd.Parameters.AddWithValue(parts[2]);
+            insertDummyCmd.Parameters.AddWithValue(parts[3]);
+
+            await insertDummyCmd.ExecuteNonQueryAsync(); 
+
+            //await insertIpCmd.ExecuteNonQueryAsync();
 
             // Finally prints response (message
             Print(response, message);

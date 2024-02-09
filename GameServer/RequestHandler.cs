@@ -1,4 +1,5 @@
 ﻿using Npgsql;
+using Npgsql.Replication.PgOutput.Messages;
 using System.Net;
 using System.Text;
 namespace GetHackedPrototype;
@@ -78,40 +79,46 @@ public class RequestHandler
         StreamReader reader = new(request.InputStream, request.ContentEncoding);
         string data = reader.ReadToEnd();
 
-        // Remove this, just example
+        // register: curl -d "username,password,dummyPassword,keyword" POST http://localhost:3000/users/register
         if (path.Contains("users/register"))
         {
-            string qRegister = "insert into users(username,password) values ($1, $2)";
+            string qRegister = "INSERT INTO users(username,password) VALUES ($1, $2) RETURNING id";
+            string qAddDummy = "INSERT INTO dummy_password(user_id,dummy_pass,keyword) VALUES ($1, $2, $3)";
+            string qAddIp = "INSERT INTO ip(address,user_id) VALUES ($1, $2)";
+
+            //INSERT into user table
             await using var cmd = _db.CreateCommand(qRegister);
+            string[] parts = data.Split(",");
+            cmd.Parameters.AddWithValue(parts[0]); //username
+            cmd.Parameters.AddWithValue(parts[1]); //password
 
-            string[] parts = data.Split("&");
+            int userId = (int)await cmd.ExecuteScalarAsync();
+            
+            //INSERT into dummy_password table
+            await using var cmd2 = _db.CreateCommand(qAddDummy);
+            cmd2.Parameters.AddWithValue(userId); //user id
+            cmd2.Parameters.AddWithValue(parts[2]); //dummy password
+            cmd2.Parameters.AddWithValue(parts[3]); //keyword
+            await cmd2.ExecuteNonQueryAsync();
 
-            foreach (var part in parts)
-            {
-                string[] dateDescription = part.Split("=");
+            //INSERT into ip table
+            IPAddress generatedIP = Generate();
+            string userIp = generatedIP.ToString();
+            await using var cmd3 = _db.CreateCommand(qAddIp);
+            cmd3.Parameters.AddWithValue(userIp); //user ip
+            cmd3.Parameters.AddWithValue(userId); //user id
+            await cmd3.ExecuteNonQueryAsync();
 
-                string column = dateDescription[0];
-                string value = dateDescription[1];
-
-                //username
-                //value1
-                //password
-                //value2
-
-                if (column == "username")
-                {
-                    cmd.Parameters.AddWithValue(value);
-                }
-                else if (column == "password")
-                {
-                    cmd.Parameters.AddWithValue(value);
-                }
-            }
-            await cmd.ExecuteNonQueryAsync();
-
-            // Finally prints response (message
+            // Finally prints response, message
             Print(response, message);
         }
+    }
+    static IPAddress Generate()
+    {
+        Random random = new Random();
+        byte[] ipBytes = new byte[4];
+        random.NextBytes(ipBytes);
+        return new IPAddress(ipBytes);
     }
     private void Print(HttpListenerResponse response, string message)
     {

@@ -1,1 +1,7 @@
-CURL COMMANDS!!!!!!!!!!!
+Game Commands (Curl)
+
+Scan for IPs:
+curl -X PUT http://localhost:3000/ipscanner.exe -d "username,password"
+
+Register new User:
+

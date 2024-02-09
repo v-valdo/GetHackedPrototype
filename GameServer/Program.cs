@@ -20,10 +20,9 @@ try
 {
     requestHandler.Start();
     while (listen) { };
-    requestHandler.Stop();
 }
 finally
 {
-
+    requestHandler.Stop();
 }
 

@@ -1,7 +1,6 @@
 ﻿using Npgsql;
 using System.Net;
 using System.Text;
-using static System.Net.Mime.MediaTypeNames;
 namespace GetHackedPrototype;
 
 public class RequestHandler
@@ -122,5 +121,6 @@ public class RequestHandler
 
         response.OutputStream.Write(buffer, 0, buffer.Length);
         response.OutputStream.Close();
+        _listener.BeginGetContext(new AsyncCallback(Route), _listener);
     }
 }

@@ -9,10 +9,7 @@ public class RequestHandler
     public int port = 3000;
     private HttpListener _listener = new();
 
-    public RequestHandler(NpgsqlDataSource db)
-    {
-        _db = db;
-    }
+    public RequestHandler(NpgsqlDataSource db) => _db = db;
 
     public void Start()
     {
@@ -22,15 +19,10 @@ public class RequestHandler
         _listener.BeginGetContext(new AsyncCallback(Route), _listener);
     }
 
-    public void Stop()
-    {
-        _listener.Stop();
-    }
-
+    public void Stop() => _listener.Stop();
     private async void Route(IAsyncResult result)
     {
         var context = _listener.EndGetContext(result);
-
         var request = context.Request;
         var response = context.Response;
         var path = request.Url?.AbsolutePath;
@@ -134,11 +126,11 @@ public class RequestHandler
             ";
 
             string[] parts = data.Split(",");
-            string username = parts[0];
-            string password = parts[1];
 
             try
             {
+                string username = parts[0];
+                string password = parts[1];
                 var IPList = await _db.CreateCommand(qIPScanner).ExecuteReaderAsync();
 
                 while (await IPList.ReadAsync())
@@ -154,7 +146,7 @@ public class RequestHandler
             catch (Exception e)
             {
                 Console.WriteLine(e.Message);
-                message += e.Message;
+                message += "Wrong user input or user doesn't exists";
             }
 
             Print(response, message);

@@ -67,10 +67,7 @@ public class RequestHandler
     private async Task Post(HttpListenerResponse response, HttpListenerRequest request)
     {
         string message = "";
-        var path = request.Url?.AbsolutePath ?? "404";
-
-        StreamReader reader = new(request.InputStream, request.ContentEncoding);
-        string data = reader.ReadToEnd();
+        var (path, data) = await ReadRequestData(request);
 
         // register: curl -d "username,password,dummyPassword,keyword" POST http://localhost:3000/users/register
         if (path.Contains("users/register"))
@@ -109,10 +106,7 @@ public class RequestHandler
     private async Task Put(HttpListenerResponse response, HttpListenerRequest request)
     {
         string message = "";
-        var path = request.Url?.AbsolutePath ?? "404";
-
-        StreamReader reader = new(request.InputStream, request.ContentEncoding);
-        string data = reader.ReadToEnd();
+        var (path, data) = await ReadRequestData(request);
 
         if (path.Contains("ipscanner.exe"))
         {
@@ -169,4 +163,18 @@ public class RequestHandler
         response.OutputStream.Close();
         _listener.BeginGetContext(new AsyncCallback(Route), _listener);
     }
+
+    private async Task<(string path, string data)> ReadRequestData(HttpListenerRequest request)
+    {
+        var path = request.Url?.AbsolutePath ?? "404";
+        string data;
+
+        using (var reader = new StreamReader(request.InputStream, request.ContentEncoding))
+        {
+            data = await reader.ReadToEndAsync();
+        }
+
+        return (path, data);
+    }
 }
+

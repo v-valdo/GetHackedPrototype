@@ -1,0 +1,49 @@
+﻿﻿CREATE TABLE users(
+id SERIAL NOT NULL,
+username TEXT NOT NULL,
+password TEXT NOT NULL,
+firewallHealth INT NOT NULL DEFAULT '100',
+detection INT DEFAULT '0',
+hackercoinz INT DEFAULT '50'
+);
+ALTER TABLE users
+ADD PRIMARY KEY(id);
+CREATE TABLE IP(
+id SERIAL NOT NULL,
+address TEXT NOT NULL,
+user_id INT NOT NULL,
+unique (address)
+);
+ALTER TABLE IP
+ADD PRIMARY KEY(id),
+ADD CONSTRAINT FK_IP_user_id FOREIGN KEY (user_id) REFERENCES users(id);
+CREATE TABLE dummy_password(
+id SERIAL NOT NULL,
+user_id INT NOT NULL,
+dummy_pass TEXT NOT NULL,
+keyword TEXT NOT NULL,
+encrypted_dummyP TEXT DEFAULT NULL
+);
+ALTER TABLE dummy_password
+ADD PRIMARY KEY(id),
+ADD CONSTRAINT FK_dummy_password_user_id FOREIGN KEY (user_id) REFERENCES users(id);
+CREATE TABLE brute_force(
+id SERIAL NOT NULL,
+hacker_id INT NOT NULL,
+target_id INT NOT NULL,
+cracking TEXT NOT NULL
+);
+ALTER TABLE brute_force 
+ADD PRIMARY KEY(id),
+ADD CONSTRAINT FK_brute_force_hacker_id FOREIGN KEY (hacker_id) REFERENCES users(id),
+ADD CONSTRAINT FK_brute_force_target_id FOREIGN KEY (target_id) REFERENCES users(id);
+CREATE TABLE notepad(
+id SERIAL NOT NULL,
+user_id INT NOT NULL,
+IP_address TEXT NOT NULL,
+number_of_attacks INT NOT NULL
+);
+ALTER TABLE notepad
+ADD PRIMARY KEY(id),
+ADD CONSTRAINT FK_notepad_user_id FOREIGN KEY (user_id) REFERENCES users(id),
+ADD CONSTRAINT FK_notepad_IP_address FOREIGN KEY (IP_address) REFERENCES IP(address);

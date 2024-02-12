@@ -1,5 +1,4 @@
-﻿using Npgsql;
-using Npgsql.Replication.PgOutput.Messages;
+using Npgsql;
 using System.Net;
 using System.Text;
 namespace GetHackedPrototype;
@@ -10,10 +9,7 @@ public class RequestHandler
     public int port = 3000;
     private HttpListener _listener = new();
 
-    public RequestHandler(NpgsqlDataSource db)
-    {
-        _db = db;
-    }
+    public RequestHandler(NpgsqlDataSource db) => _db = db;
 
     public void Start()
     {
@@ -23,32 +19,28 @@ public class RequestHandler
         _listener.BeginGetContext(new AsyncCallback(Route), _listener);
     }
 
-    public void Stop()
-    {
-        _listener.Stop();
-    }
-
+    public void Stop() => _listener.Stop();
     private async void Route(IAsyncResult result)
     {
         var context = _listener.EndGetContext(result);
-
         var request = context.Request;
         var response = context.Response;
         var path = request.Url?.AbsolutePath;
 
         switch (request.HttpMethod)
         {
-            // routing request types to methods? mb better?
             case "GET":
                 Console.WriteLine($"get request received - {request.RawUrl}");
                 await Get(response, request);
                 break;
             case "POST":
-                Console.WriteLine($"post request received");
+                Console.WriteLine($"post request received to {request.RawUrl}");
                 await Post(response, request);
                 break;
             case "PUT":
-                Console.WriteLine($"put request received");
+
+                Console.WriteLine($"put request received to {request.RawUrl}");
+
                 await Put(response, request);
                 break;
         }
@@ -58,7 +50,6 @@ public class RequestHandler
         string message = "";
         var path = request.Url?.AbsolutePath ?? "404";
 
-        // Remove this, just example
         if (path.Contains("users/all"))
         {
             string qUsers = "select username,password from users;";
@@ -76,15 +67,14 @@ public class RequestHandler
     private async Task Post(HttpListenerResponse response, HttpListenerRequest request)
     {
         string message = "";
-        var path = request.Url?.AbsolutePath ?? "404";
 
-        StreamReader reader = new(request.InputStream, request.ContentEncoding);
-        string data = reader.ReadToEnd();
-        string[] parts = data.Split(",");
+        var (path, data) = await ReadRequestData(request);
+
 
         // register: curl -d "username,password,dummyPassword,keyword" POST http://localhost:3000/users/register
         if (path.Contains("users/register"))
         {
+
             try
             {
                 string qRegister = "INSERT INTO users(username,password) VALUES ($1, $2) RETURNING id";
@@ -242,6 +232,50 @@ public class RequestHandler
             Print(response, message);
         }
     }
+  
+    private async Task Put(HttpListenerResponse response, HttpListenerRequest request)
+    {
+        string message = "";
+        var (path, data) = await ReadRequestData(request);
+
+        if (path.Contains("ipscanner.exe"))
+        {
+            var qIPScanner = "select address from ip";
+
+            var qEditUserStats = @"
+            update users 
+            set hackercoinz = hackercoinz - 5, 
+            detection = detection + 5 
+            where username = $1 and password = $2
+            ";
+
+            string[] parts = data.Split(",");
+
+            try
+            {
+                string username = parts[0];
+                string password = parts[1];
+                var IPList = await _db.CreateCommand(qIPScanner).ExecuteReaderAsync();
+
+                while (await IPList.ReadAsync())
+                {
+                    message += $"IP Address found: {IPList.GetString(0)}\n";
+                }
+                await using var EditUser = _db.CreateCommand(qEditUserStats);
+                EditUser.Parameters.AddWithValue(username);
+                EditUser.Parameters.AddWithValue(password);
+                await EditUser.ExecuteNonQueryAsync();
+            }
+
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message);
+                message += "Wrong user input or user doesn't exists";
+            }
+
+            Print(response, message);
+        }
+    }
     static IPAddress Generate()
     {
         Random random = new Random();
@@ -259,4 +293,18 @@ public class RequestHandler
         response.OutputStream.Close();
         _listener.BeginGetContext(new AsyncCallback(Route), _listener);
     }
+
+    private async Task<(string path, string data)> ReadRequestData(HttpListenerRequest request)
+    {
+        var path = request.Url?.AbsolutePath ?? "404";
+        string data;
+
+        using (var reader = new StreamReader(request.InputStream, request.ContentEncoding))
+        {
+            data = await reader.ReadToEndAsync();
+        }
+
+        return (path, data);
+    }
 }
+

@@ -1,4 +1,11 @@
+
 CURL COMMANDS!!!!!!!!!!!
 
 Register User:	curl -d "username,password,dummyPassword,keyword" POST http://localhost:3000/users/register
+
 Attack:	 curl -X PUT http://localhost:3000/attack/ -d 'attackerId,targetIp'
+
+Scan for IPs: curl -X PUT http://localhost:3000/ipscanner.exe -d "username,password"
+
+
+

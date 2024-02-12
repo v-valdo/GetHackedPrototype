@@ -36,7 +36,6 @@ cracking TEXT NOT NULL
 ALTER TABLE brute_force 
 ADD PRIMARY KEY(id),
 ADD CONSTRAINT FK_brute_force_hacker_id FOREIGN KEY (hacker_id) REFERENCES users(id),
-ADD CONSTRAINT FK_brute_force_target_id FOREIGN KEY (target_id) REFERENCES users(id);
 CREATE TABLE notepad(
 id SERIAL NOT NULL,
 user_id INT NOT NULL,

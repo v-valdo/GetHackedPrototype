@@ -67,7 +67,6 @@ public class RequestHandler
     private async Task Post(HttpListenerResponse response, HttpListenerRequest request)
     {
         string message = "";
-
         var (path, parts) = await ReadRequestData(request);
 
         // register: curl -d "username,password,dummyPassword,keyword" POST http://localhost:3000/users/register

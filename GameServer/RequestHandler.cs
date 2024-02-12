@@ -68,8 +68,7 @@ public class RequestHandler
     {
         string message = "";
 
-        var (path, data) = await ReadRequestData(request);
-
+        var (path, parts) = await ReadRequestData(request);
 
         // register: curl -d "username,password,dummyPassword,keyword" POST http://localhost:3000/users/register
         if (path.Contains("users/register"))
@@ -82,7 +81,6 @@ public class RequestHandler
 
                 //INSERT into user table
                 await using var cmd = _db.CreateCommand(qRegister);
-                string[] parts = data.Split(",");
                 cmd.Parameters.AddWithValue(parts[0]); //username
                 cmd.Parameters.AddWithValue(parts[1]); //password
 
@@ -120,7 +118,7 @@ public class RequestHandler
     private async Task Put(HttpListenerResponse response, HttpListenerRequest request)
     {
         string message = "";
-        var (path, data) = await ReadRequestData(request);
+        var (path, parts) = await ReadRequestData(request);
 
         if (path.Contains("attack/")) //Attack! curl -X PUT http://localhost:3000/attack/ -d 'attackerId,targetIp'
         {
@@ -137,12 +135,11 @@ public class RequestHandler
 
                 const string qSelectTargetId = "SELECT user_id FROM IP WHERE address = $1";
 
-                string[] parts = data.Split(",");
                 int attackerId = 0;
                 int targetId = 0;
                 string targetIp = string.Empty;
 
-                if (data.Length >= 2)
+                if (parts.Length >= 2)
                 {
                     attackerId = int.Parse(parts[0].Trim());
                     targetIp = parts[1];
@@ -241,7 +238,6 @@ public class RequestHandler
             detection = detection + 5 
             where username = $1 and password = $2
             ";
-                string[] parts = data.Split(",");
                 string username = parts[0];
                 string password = parts[1];
                 var IPList = await _db.CreateCommand(qIPScanner).ExecuteReaderAsync();
@@ -283,7 +279,7 @@ public class RequestHandler
         _listener.BeginGetContext(new AsyncCallback(Route), _listener);
     }
 
-    private async Task<(string path, string data)> ReadRequestData(HttpListenerRequest request)
+    private async Task<(string path, string[] parts)> ReadRequestData(HttpListenerRequest request)
     {
         var path = request.Url?.AbsolutePath ?? "404";
         string data;
@@ -293,7 +289,7 @@ public class RequestHandler
             data = await reader.ReadToEndAsync();
         }
 
-        return (path, data);
+        return (path, data.Split(","));
     }
 }
 

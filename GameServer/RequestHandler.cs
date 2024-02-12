@@ -74,7 +74,6 @@ public class RequestHandler
         // register: curl -d "username,password,dummyPassword,keyword" POST http://localhost:3000/users/register
         if (path.Contains("users/register"))
         {
-
             try
             {
                 string qRegister = "INSERT INTO users(username,password) VALUES ($1, $2) RETURNING id";
@@ -83,7 +82,7 @@ public class RequestHandler
 
                 //INSERT into user table
                 await using var cmd = _db.CreateCommand(qRegister);
-                //string[] parts = data.Split(",");
+                string[] parts = data.Split(",");
                 cmd.Parameters.AddWithValue(parts[0]); //username
                 cmd.Parameters.AddWithValue(parts[1]); //password
 
@@ -121,14 +120,11 @@ public class RequestHandler
     private async Task Put(HttpListenerResponse response, HttpListenerRequest request)
     {
         string message = "";
-        var path = request.Url?.AbsolutePath ?? "404";
-        StreamReader reader = new(request.InputStream, request.ContentEncoding);
-        string data = reader.ReadToEnd();
-        string[] parts = data.Split(",");
+        var (path, data) = await ReadRequestData(request);
 
-        try
+        if (path.Contains("attack/")) //Attack! curl -X PUT http://localhost:3000/attack/ -d 'attackerId,targetIp'
         {
-            if (path.Contains("attack/")) //Attack! curl -X PUT http://localhost:3000/attack/ -d 'attackerId,targetIp'
+            try
             {
                 const string qUpdateFirewall = "UPDATE users SET firewallhealth = firewallhealth - 10 WHERE id = $1";
                 const string qReadFirewall = "select firewallhealth from users where id = $1";
@@ -141,6 +137,7 @@ public class RequestHandler
 
                 const string qSelectTargetId = "SELECT user_id FROM IP WHERE address = $1";
 
+                string[] parts = data.Split(",");
                 int attackerId = 0;
                 int targetId = 0;
                 string targetIp = string.Empty;
@@ -221,38 +218,30 @@ public class RequestHandler
                     }
                 }
             }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Unexpected error: {ex.Message}");
+                Print(response, $"Unexpected error: {ex.Message}");
+            }
+            finally
+            {
+                Print(response, message);
+            }
         }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Unexpected error: {ex.Message}");
-            Print(response, $"Unexpected error: {ex.Message}");
-        }
-        finally
-        {
-            Print(response, message);
-        }
-    }
-  
-    private async Task Put(HttpListenerResponse response, HttpListenerRequest request)
-    {
-        string message = "";
-        var (path, data) = await ReadRequestData(request);
 
         if (path.Contains("ipscanner.exe"))
         {
-            var qIPScanner = "select address from ip";
+            try
+            {
+                var qIPScanner = "select address from ip";
 
-            var qEditUserStats = @"
+                var qEditUserStats = @"
             update users 
             set hackercoinz = hackercoinz - 5, 
             detection = detection + 5 
             where username = $1 and password = $2
             ";
-
-            string[] parts = data.Split(",");
-
-            try
-            {
+                string[] parts = data.Split(",");
                 string username = parts[0];
                 string password = parts[1];
                 var IPList = await _db.CreateCommand(qIPScanner).ExecuteReaderAsync();
@@ -266,14 +255,14 @@ public class RequestHandler
                 EditUser.Parameters.AddWithValue(password);
                 await EditUser.ExecuteNonQueryAsync();
             }
-
             catch (Exception e)
             {
                 Console.WriteLine(e.Message);
-                message += "Wrong user input or user doesn't exists";
             }
-
-            Print(response, message);
+            finally
+            {
+                Print(response, message);
+            }
         }
     }
     static IPAddress Generate()

@@ -60,16 +60,6 @@ public class RequestHandler
                 message += $"Username: {reader.GetString(0)}, Password: {reader.GetString(1)}";
             }
         }
-        if (path.Contains("users/stats"))
-        {
-            string userStats = "select username, hackercoinz, detection, firewallhealth from users";
-            var reader = await _db.CreateCommand(userStats).ExecuteReaderAsync();
-
-            while (await reader.ReadAsync())
-            {
-                message += $"Username: {reader.GetString(0)}, Hackercoinz: {reader.GetString(1)}, Detection Rate: {reader.GetString(2)}, Firewall Health: {reader.GetString(3)}";
-            }
-        }
 
 
         // Finally prints response (message)

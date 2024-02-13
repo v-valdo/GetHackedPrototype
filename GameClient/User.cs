@@ -1,5 +1,4 @@
 ﻿using System.Text;
-
 namespace GameClient;
 
 public class User
@@ -34,6 +33,13 @@ public class User
         user.Password = password;
         await user.PlayMenu(user);
     }
+    public static User LoginMenu()
+    {
+        User user = new();
+        user.Username = Console.ReadLine();
+        user.Password = Console.ReadLine();
+        return user;
+    }
     public static async Task WelcomeMenu()
     {
         while (true)
@@ -45,14 +51,16 @@ public class User
                 {
                     case 1:
                         User user = new();
-                        string? userDetails = user.Register();
 
+                        string? userDetails = user.Register();
                         await RegisterRequest(_client, Uri, userDetails);
 
                         string[] parts = userDetails.Split(",");
                         await user.LoginAction(parts[0], parts[1]);
                         break;
                     case 2:
+                        User loginUser = LoginMenu();
+                        await loginUser.LoginAction(loginUser.Username, loginUser.Password);
                         break;
                     case 3:
                         Environment.Exit(0);
@@ -91,7 +99,7 @@ public class User
             switch (command)
             {
                 case "h":
-                    // Help();
+                    Help();
                     break;
                 case "clear":
                     Console.Clear();
@@ -113,5 +121,20 @@ public class User
                     break;
             }
         }
+    }
+    public void Help()
+    {
+        Console.Clear();
+        Animation.Space();
+        TextPosition.Center("Installed Commands");
+        TextPosition.Center("> run ipscraper");
+        TextPosition.Center("> run defender");
+        TextPosition.Center("> run hideme");
+        TextPosition.Center("> run keyencryptor");
+        TextPosition.Center("> run hddwiper");
+        TextPosition.Center("> stats");
+        TextPosition.Center("> clear");
+        TextPosition.Center("> exit");
+        Console.WriteLine();
     }
 }

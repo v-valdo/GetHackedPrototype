@@ -46,3 +46,4 @@ ALTER TABLE notepad
 ADD PRIMARY KEY(id),
 ADD CONSTRAINT FK_notepad_user_id FOREIGN KEY (user_id) REFERENCES users(id),
 ADD CONSTRAINT FK_notepad_IP_address FOREIGN KEY (IP_address) REFERENCES IP(address);
+INSERT INTO users(id,username,password) VALUES (0, 'police', 12345);

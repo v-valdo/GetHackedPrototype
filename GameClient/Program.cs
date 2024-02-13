@@ -1,10 +1,8 @@
 ﻿using GameClient;
-
-HttpClient client = new();
-client.BaseAddress = new Uri("http://localhost:3000");
-var server = client.BaseAddress;
-
-TextPosition.Center("Welcome to GetHacked");
+Console.Clear();
+Animation.Title();
+Console.WriteLine();
+Console.WriteLine();
 // GET REQUEST GENERAL (curl -X GET localhost:3000)
 //await client.GetAsync(server);
 

@@ -24,22 +24,21 @@ public class User
         TextPosition.Center("Enter Password");
         password = Console.ReadLine();
         Console.WriteLine($"{username} created with password {password}");
+        Thread.Sleep(250);
         return $"{username},{password}";
     }
-    public User Login(string username, string password)
+    public async Task LoginAction(string username, string password)
     {
         User user = new();
         user.Username = username;
         user.Password = password;
-        return user;
+        await user.PlayMenu(user);
     }
     public static async Task WelcomeMenu()
     {
         while (true)
         {
-            Console.Clear();
             Console.WriteLine("1.Register New User\n2.Login\n3.Exit Game");
-
             if (int.TryParse(Console.ReadLine(), out int r))
             {
                 switch (r)
@@ -47,11 +46,11 @@ public class User
                     case 1:
                         User user = new();
                         string? userDetails = user.Register();
+
                         await RegisterRequest(_client, Uri, userDetails);
+
                         string[] parts = userDetails.Split(",");
-                        user.Username = parts[0];
-                        user.Password = parts[1];
-                        await user.PlayerMenu(user);
+                        await user.LoginAction(parts[0], parts[1]);
                         break;
                     case 2:
                         break;
@@ -61,22 +60,6 @@ public class User
                     default:
                         break;
                 }
-            }
-        }
-    }
-    public async Task PlayerMenu(User user)
-    {
-        Console.Clear();
-        Console.WriteLine("1.Scan for IPs\n2.View Stats\n3.Attack IP");
-        if (int.TryParse(Console.ReadLine(), out int r))
-        {
-            switch (r)
-            {
-                case 1:
-                    await Software.IPScanner(_client, Uri, user);
-                    break;
-                default:
-                    break;
             }
         }
     }
@@ -92,7 +75,43 @@ public class User
         catch (Exception e)
         {
             Console.WriteLine(e.Message);
-            throw;
+        }
+    }
+
+    public async Task PlayMenu(User user)
+    {
+        while (true)
+        {
+            Animation.Space();
+            TextPosition.Center("type 'h' for list of commands");
+            Console.Write($"~/{user.Username}> ");
+            string? command = Console.ReadLine();
+            Software software = new();
+
+            switch (command)
+            {
+                case "h":
+                    // Help();
+                    break;
+                case "clear":
+                    Console.Clear();
+                    break;
+                case "run ipscanner":
+                    await Software.IPScanner(_client, Uri, user);
+                    break;
+                case "run hideme":
+                    //software.HideMe();
+                    break;
+                case "stats":
+                    //Menu.Stats(hacker);
+                    break;
+                case "crash":
+                    // Animation.Raided();
+                    break;
+                case "hacked":
+                    //Animation.Hacked();
+                    break;
+            }
         }
     }
 }

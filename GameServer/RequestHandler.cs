@@ -9,12 +9,12 @@ public class RequestHandler
     private readonly NpgsqlDataSource? _db;
     public int port = 3000;
     private HttpListener _listener = new();
-    private readonly Software _software;
+    private readonly UserAction _action;
 
     public RequestHandler(NpgsqlDataSource db)
     {
         _db = db;
-        _software = new Software(_db);
+        _action = new UserAction(_db);
     }
 
     public void Start()
@@ -53,95 +53,22 @@ public class RequestHandler
     {
         string message = "";
         var (path, parts) = await ReadRequestData(request);
-
-        if (path.Contains("ipscanner.exe"))
-        {
-            try
-            {
-                var qIPScanner = "select address from ip";
-
-                var qEditUserStats = @"
-            update users 
-            set hackercoinz = hackercoinz - 5, 
-            detection = detection + 5 
-            where username = $1 and password = $2
-            ";
-                string username = parts[0];
-                string password = parts[1];
-                var IPList = await _db.CreateCommand(qIPScanner).ExecuteReaderAsync();
-
-                while (await IPList.ReadAsync())
-                {
-                    message += $"IP Address found: {IPList.GetString(0)}\n";
-                }
-                await using var EditUser = _db.CreateCommand(qEditUserStats);
-                EditUser.Parameters.AddWithValue(username);
-                EditUser.Parameters.AddWithValue(password);
-                await EditUser.ExecuteNonQueryAsync();
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine(e.Message);
-            }
-            finally
-            {
-                Print(response, message);
-            }
-        }
-
-        // Finally prints response (message)
-        Print(response, message);
     }
     private async Task Post(HttpListenerResponse response, HttpListenerRequest request)
     {
         string message = "";
         var (path, parts) = await ReadRequestData(request);
 
+        if (path.Contains("ipscanner.exe"))
+        {
+            message = await _action.IPScanner(path, parts, response);
+        }
+
         // register: curl -d "username,password,dummyPassword,keyword" POST http://localhost:3000/users/register
         if (path.Contains("users/register"))
         {
-            try
-            {
-                string qRegister = "INSERT INTO users(username,password) VALUES ($1, $2) RETURNING id";
-                string qAddDummy = "INSERT INTO dummy_password(user_id,dummy_pass,keyword) VALUES ($1, $2, $3)";
-                string qAddIp = "INSERT INTO ip(address,user_id) VALUES ($1, $2)";
-
-                //INSERT into user table
-                await using var cmd = _db.CreateCommand(qRegister);
-                cmd.Parameters.AddWithValue(parts[0]); //username
-                cmd.Parameters.AddWithValue(parts[1]); //password
-
-                int userId = (int)await cmd.ExecuteScalarAsync();
-
-                //INSERT into dummy_password table
-                await using var cmd2 = _db.CreateCommand(qAddDummy);
-                cmd2.Parameters.AddWithValue(userId); //user id
-                cmd2.Parameters.AddWithValue(parts[2]); //dummy password
-                cmd2.Parameters.AddWithValue(parts[3]); //keyword
-                await cmd2.ExecuteNonQueryAsync();
-
-                //INSERT into ip table
-                IPAddress generatedIP = Generate();
-                string userIp = generatedIP.ToString();
-                await using var cmd3 = _db.CreateCommand(qAddIp);
-                cmd3.Parameters.AddWithValue(userIp); //user ip
-                cmd3.Parameters.AddWithValue(userId); //user id
-                await cmd3.ExecuteNonQueryAsync();
-
-                await GeneratePoliceIP();
-
-                message = $"User '{parts[0]}' registered successfully!";
-            }
-
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Unexpected error: {ex.Message}");
-                Print(response, $"Unexpected error: {ex.Message}");
-            }
-            finally
-            {
-                Print(response, message);
-            }
+            message = await _action.Register(path, parts, response);
+            Print(response, message);
         }
     }
     private async Task Put(HttpListenerResponse response, HttpListenerRequest request)
@@ -151,189 +78,13 @@ public class RequestHandler
 
         if (path.Contains("attack/")) //Attack! curl -X PUT http://localhost:3000/attack/ -d 'attackerId,targetIp'
         {
-            try
-            {
-                const string qUpdateFirewall = "UPDATE users SET firewallhealth = firewallhealth - 10 WHERE id = $1";
-                const string qReadFirewall = "select firewallhealth from users where id = $1";
-
-                const string qUpdateHackerCoinz = "UPDATE users SET hackercoinz = hackercoinz + 5 WHERE id = $1";
-                const string qReadHackerCoinz = "select hackercoinz from users where id = $1";
-
-                const string qUpdateDetection = "UPDATE users SET detection = CASE WHEN (detection + 20) <= 100 THEN (detection + 20) ELSE 100 END WHERE id = $1";
-                const string qReadDetection = "select detection from users where id = $1";
-
-                const string qSelectTargetId = "SELECT user_id FROM IP WHERE address = $1";
-
-                const string qReadKeyword = "select keyword from dummy_password where user_id = $1";
-                const string qCheckBF = "SELECT COUNT (*) FROM brute_force WHERE hacker_id = $1 AND target_id = $2";
-                const string qInsertBF = "INSERT INTO brute_force (hacker_id, target_id, cracking) VALUES ($1, $2, $3);";
-                const string qReadCurrentCracking = "SELECT cracking FROM brute_force WHERE hacker_id = $1 AND target_id= $2";
-                const string qUpdateBF = "UPDATE brute_force SET cracking = $1 WHERE hacker_id = $2 AND target_id= $3;";
-
-                int attackerId = 0;
-                int targetId = 0;
-                string targetIp = string.Empty;
-
-                if (parts.Length >= 2)
-                {
-                    attackerId = int.Parse(parts[0].Trim());
-                    targetIp = parts[1];
-                }
-                else
-                {
-                    message = "Error: Invalid data input.";
-                }
-
-                //Get targetId
-                var cmdSelectTargetId = _db.CreateCommand(qSelectTargetId);
-                cmdSelectTargetId.Parameters.AddWithValue(targetIp);
-
-                using (var readerSelectTargetId = await cmdSelectTargetId.ExecuteReaderAsync())
-                {
-                    if (await readerSelectTargetId.ReadAsync())
-                    {
-                        targetId = readerSelectTargetId.GetInt32(0);
-                    }
-                }
-
-                //Update Firewall
-                var cmdUpdateFirewall = _db.CreateCommand(qUpdateFirewall);
-                cmdUpdateFirewall.Parameters.AddWithValue(targetId);
-                await cmdUpdateFirewall.ExecuteNonQueryAsync();
-
-                //Read Firewall
-                var cmdReadFirewall = _db.CreateCommand(qReadFirewall);
-                cmdReadFirewall.Parameters.AddWithValue(targetId);
-                var readerFirewall = await cmdReadFirewall.ExecuteReaderAsync();
-                while (await readerFirewall.ReadAsync())
-                {
-                    int firewallHealth = readerFirewall.GetInt32(0);
-                    message += $" Your attack was succesfull! \n Your opponent's firewall is now at {firewallHealth}. ";
-                }
-
-                //Update HackerCoinz
-                var cmdUpdateHackerCoinz = _db.CreateCommand(qUpdateHackerCoinz);
-                cmdUpdateHackerCoinz.Parameters.AddWithValue(attackerId);
-                await cmdUpdateHackerCoinz.ExecuteNonQueryAsync();
-
-                //Read Points 
-                var cmdHackerCoinz = _db.CreateCommand(qReadHackerCoinz);
-                cmdHackerCoinz.Parameters.AddWithValue(attackerId);
-                var readerHackerCoinz = await cmdHackerCoinz.ExecuteReaderAsync();
-                while (await readerHackerCoinz.ReadAsync())
-                {
-                    int hackerCoinz = readerHackerCoinz.GetInt32(0);
-                    message += $"\n Your points went up to {hackerCoinz} ";
-                }
-
-                //Update Detection
-                var cmdUpdateDetection = _db.CreateCommand(qUpdateDetection);
-                cmdUpdateDetection.Parameters.AddWithValue(attackerId);
-                await cmdUpdateDetection.ExecuteNonQueryAsync();
-
-                //Read Detection 
-                int detection;
-                var cmdReadDetection = _db.CreateCommand(qReadDetection);
-                cmdReadDetection.Parameters.AddWithValue(attackerId);
-                var readerDetection = await cmdReadDetection.ExecuteReaderAsync();
-
-                while (await readerDetection.ReadAsync())
-                {
-                    detection = readerDetection.GetInt32(0);
-                    if (detection < 100)
-                    {
-                        message += $"and your detection went up to {detection}%. ";
-                    }
-                    else
-                    {
-                        message = $"Police raid - your detection level reached 100%!";
-                    }
-                }
-
-                //Get part of keyword
-
-                //Check if attack already exists in brute_force table, if not insert
-
-                var cmdCheckBF = _db.CreateCommand(qCheckBF);
-                cmdCheckBF.Parameters.AddWithValue(attackerId);
-                cmdCheckBF.Parameters.AddWithValue(targetId);
-                var rowCount = await cmdCheckBF.ExecuteScalarAsync();
-
-                int rowCountInt = Convert.ToInt32(rowCount);
-
-                if (rowCountInt == 0)
-                {
-                    var cmdReadKeyword = _db.CreateCommand(qReadKeyword);
-                    cmdReadKeyword.Parameters.AddWithValue(targetId);
-                    var readerKeyword = await cmdReadKeyword.ExecuteReaderAsync();
-
-                    string firstLetter = "";
-
-                    while (await readerKeyword.ReadAsync())
-                    {
-                        string fullKeyword = readerKeyword.GetString(0);
-                        firstLetter = fullKeyword.Substring(0, 1);
-                        message += $"\n The first letter of your target's keyword is '{firstLetter}'";
-                    }
-
-                    // INSERT values INTO brute force table
-
-                    var cmdUpdateBF = _db.CreateCommand(qInsertBF);
-                    cmdUpdateBF.Parameters.AddWithValue(attackerId);
-                    cmdUpdateBF.Parameters.AddWithValue(targetId);
-                    cmdUpdateBF.Parameters.AddWithValue(firstLetter);
-                    await cmdUpdateBF.ExecuteNonQueryAsync();
-                }
-
-                else
-
-                {
-                    // Read the existing cracking value and add new letter
-                    var cmdReadCurrentCracking = _db.CreateCommand(qReadCurrentCracking);
-                    cmdReadCurrentCracking.Parameters.AddWithValue(attackerId);
-                    cmdReadCurrentCracking.Parameters.AddWithValue(targetId);
-                    var currentCracking = await cmdReadCurrentCracking.ExecuteScalarAsync() as string;
-
-                    var cmdReadKeyword = _db.CreateCommand(qReadKeyword);
-                    cmdReadKeyword.Parameters.AddWithValue(targetId);
-                    var tKeyword = await cmdReadKeyword.ExecuteScalarAsync() as string;
-
-                    char[] Keyword = tKeyword.ToCharArray();
-
-                    string newCracking = currentCracking + Keyword[currentCracking.Length];
-
-                    // Update cracking
-                    var cmdUpdateBF = _db.CreateCommand(qUpdateBF);
-                    cmdUpdateBF.Parameters.AddWithValue(newCracking);
-                    cmdUpdateBF.Parameters.AddWithValue(attackerId);
-                    cmdUpdateBF.Parameters.AddWithValue(targetId);
-                    await cmdUpdateBF.ExecuteNonQueryAsync();
-
-                    //Read New Cracking
-                    var cmdReadNewCracking = _db.CreateCommand(qReadCurrentCracking);
-                    cmdReadNewCracking.Parameters.AddWithValue(attackerId);
-                    cmdReadNewCracking.Parameters.AddWithValue(targetId);
-                    var ReaderNewCracking = await cmdReadNewCracking.ExecuteReaderAsync();
-                    while (await ReaderNewCracking.ReadAsync())
-                    {
-                        message += $"\n You added a new letter to the target's keyword:'{newCracking}'";
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Unexpected error: {ex.Message}");
-                Print(response, $"Unexpected error: {ex.Message}");
-            }
-            finally
-            {
-                Print(response, message);
-            }
+            message = await _action.Attack(path, parts, response);
+            Print(response, message);
         }
 
         if (path.Contains("hide-me.exe"))
         {
-            message = await _software.HideMe(path, parts, response);
+            message = await _action.HideMe(path, parts, response);
             Print(response, message);
         }
 
@@ -345,7 +96,7 @@ public class RequestHandler
         random.NextBytes(ipBytes);
         return new IPAddress(ipBytes);
     }
-    private async Task GeneratePoliceIP()
+    public async Task GeneratePoliceIP()
     {
         const string qCountUsers = @$"SELECT COUNT(*) FROM users u WHERE u.id > 0";
         const string qAddPoliceIp = "INSERT INTO ip(address,user_id) VALUES ($1, $2)";

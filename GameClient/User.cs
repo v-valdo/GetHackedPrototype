@@ -1,4 +1,6 @@
-﻿namespace GameClient;
+﻿using System.Text;
+
+namespace GameClient;
 
 public class User
 {
@@ -24,6 +26,10 @@ public class User
         Console.WriteLine($"{username} created with password {password}");
         return $"{username},{password}";
     }
+    public User Login(string username, string password)
+    {
+
+    }
     public async Task WelcomeMenu()
     {
         while (true)
@@ -35,8 +41,7 @@ public class User
                 switch (r)
                 {
                     case 1:
-                        await Software.Register(_client, Uri, Register());
-                        User user =
+                        await Register(_client, Uri, Register());
                         await PlayerMenu();
                         break;
                     case 2:
@@ -64,6 +69,21 @@ public class User
                 default:
                     break;
             }
+        }
+    }
+    public static async Task Register(HttpClient client, Uri uri, string data)
+    {
+        using StringContent textContent = new StringContent(data, Encoding.UTF8, "text/plain");
+        try
+        {
+            using HttpResponseMessage response = await client.PostAsync(uri + "/users/register", textContent);
+            var jsonResponse = await response.Content.ReadAsStringAsync();
+            Console.WriteLine($"{jsonResponse}\n");
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e.Message);
+            throw;
         }
     }
 }

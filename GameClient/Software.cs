@@ -2,7 +2,7 @@
 using System.Text;
 public class Software
 {
-    public static async Task Register(HttpClient client, Uri url, string data)
+    public static async Task Register(HttpClient client, Uri uri, string data)
     {
         using StringContent textContent = new StringContent(data, Encoding.UTF8, "text/plain");
         try

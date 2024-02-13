@@ -68,7 +68,7 @@ public class RequestHandler
 
             while (await reader.ReadAsync())
             {
-                message += $"Username: {reader.GetString(0)}, Hackercoinz: {reader.GetString(1)}, Detection Rate: {reader.GetString(2)}, Firewall Health: {reader.GetString(3)}";
+                message += $"Username: {reader.GetString(0)}, Hackercoinz: {reader.GetInt32(1)}, Detection Rate: {reader.GetInt32(2)}, Firewall Health: {reader.GetInt32(3)}";
             }
         }
 

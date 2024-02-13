@@ -100,6 +100,8 @@ public class RequestHandler
                 cmd3.Parameters.AddWithValue(userId); //user id
                 await cmd3.ExecuteNonQueryAsync();
 
+                await GeneratePoliceIP();
+
                 message = $"User '{parts[0]}' registered successfully!";
             }
 
@@ -266,6 +268,25 @@ public class RequestHandler
         byte[] ipBytes = new byte[4];
         random.NextBytes(ipBytes);
         return new IPAddress(ipBytes);
+    }
+    private async Task GeneratePoliceIP()
+    {
+        const string qCountUsers = @$"SELECT COUNT(*) FROM users u WHERE u.id > 0";
+        const string qAddPoliceIp = "INSERT INTO ip(address,user_id) VALUES ($1, $2)";
+
+        var cmdCountUsers = _db.CreateCommand(qCountUsers);
+        var rowCount = await cmdCountUsers.ExecuteScalarAsync();
+        int rowCountInt = Convert.ToInt32(rowCount);
+
+        if (rowCountInt % 3 == 1)
+        {
+            IPAddress generatedPoliceIP = Generate();
+            string policeIp = generatedPoliceIP.ToString();
+            await using var cmd = _db.CreateCommand(qAddPoliceIp);
+            cmd.Parameters.AddWithValue(policeIp);
+            cmd.Parameters.AddWithValue(0);
+            await cmd.ExecuteNonQueryAsync();
+        }
     }
     private void Print(HttpListenerResponse response, string message)
     {

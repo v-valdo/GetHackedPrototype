@@ -1,3 +1,4 @@
+using GameServer;
 using Npgsql;
 using System.Net;
 using System.Text;
@@ -8,8 +9,13 @@ public class RequestHandler
     private readonly NpgsqlDataSource? _db;
     public int port = 3000;
     private HttpListener _listener = new();
+    private readonly Software _software;
 
-    public RequestHandler(NpgsqlDataSource db) => _db = db;
+    public RequestHandler(NpgsqlDataSource db)
+    {
+        _db = db;
+        _software = new Software(_db);
+    }
 
     public void Start()
     {
@@ -325,8 +331,14 @@ public class RequestHandler
             }
         }
 
+        if (path.Contains("hide-me.exe"))
+        {
+            message = await _software.HideMe(path, parts, response);
+            Print(response, message);
+        }
+
     }
-    static IPAddress Generate()
+    public IPAddress Generate()
     {
         Random random = new Random();
         byte[] ipBytes = new byte[4];

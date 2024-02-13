@@ -61,9 +61,9 @@ public class RequestHandler
             }
         }
 
-        if (path.Contains("users/stats"))
+        else if (path.Contains("users/1/stats"))
         {
-            string userStats = "select username, hackercoinz, detection, firewallhealth from users";
+            string userStats = "select username, hackercoinz, detection, firewallhealth from users where id = 1;";
             var reader = await _db.CreateCommand(userStats).ExecuteReaderAsync();
 
             while (await reader.ReadAsync())
@@ -71,8 +71,46 @@ public class RequestHandler
                 message += $"Username: {reader.GetString(0)}, Hackercoinz: {reader.GetInt32(1)}, Detection Rate: {reader.GetInt32(2)}, Firewall Health: {reader.GetInt32(3)}";
             }
         }
+        else if (path.Contains("users/2/stats"))
+        {
+            string userStats = "select username, hackercoinz, detection, firewallhealth from users where id = 2;";
+            var reader = await _db.CreateCommand(userStats).ExecuteReaderAsync();
 
+            while (await reader.ReadAsync())
+            {
+                message += $"Username: {reader.GetString(0)}, Hackercoinz: {reader.GetInt32(1)}, Detection Rate: {reader.GetInt32(2)}, Firewall Health: {reader.GetInt32(3)}";
+            }
+        }
+        else if (path.Contains("users/3/stats"))
+        {
+            string userStats = "select username, hackercoinz, detection, firewallhealth from users where id = 3;";
+            var reader = await _db.CreateCommand(userStats).ExecuteReaderAsync();
 
+            while (await reader.ReadAsync())
+            {
+                message += $"Username: {reader.GetString(0)}, Hackercoinz: {reader.GetInt32(1)}, Detection Rate: {reader.GetInt32(2)}, Firewall Health: {reader.GetInt32(3)}";
+            }
+        }
+        else if (path.Contains("users/4/stats"))
+        {
+            string userStats = "select username, hackercoinz, detection, firewallhealth from users where id = 4;";
+            var reader = await _db.CreateCommand(userStats).ExecuteReaderAsync();
+
+            while (await reader.ReadAsync())
+            {
+                message += $"Username: {reader.GetString(0)}, Hackercoinz: {reader.GetInt32(1)}, Detection Rate: {reader.GetInt32(2)}, Firewall Health: {reader.GetInt32(3)}";
+            }
+        }
+        else if (path.Contains("users/5/stats"))
+        {
+            string userStats = "select username, hackercoinz, detection, firewallhealth from users where id = 5;";
+            var reader = await _db.CreateCommand(userStats).ExecuteReaderAsync();
+
+            while (await reader.ReadAsync())
+            {
+                message += $"Username: {reader.GetString(0)}, Hackercoinz: {reader.GetInt32(1)}, Detection Rate: {reader.GetInt32(2)}, Firewall Health: {reader.GetInt32(3)}";
+            }
+        }
         // Finally prints response (message)
         Print(response, message);
     }

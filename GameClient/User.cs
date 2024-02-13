@@ -4,13 +4,14 @@ namespace GameClient;
 
 public class User
 {
-    private HttpClient? _client { get; set; }
-    private Uri Uri { get; set; }
-    private string Username;
-    private string Password;
+    private static HttpClient? _client { get; set; }
+    private static Uri? Uri { get; set; }
+    public string? Username;
+    public string? Password;
     public User()
     {
         _client = new();
+        _client.BaseAddress = new Uri("http://localhost:3000");
         Uri = _client.BaseAddress;
     }
     public string Register()
@@ -22,27 +23,35 @@ public class User
         username = Console.ReadLine();
         TextPosition.Center("Enter Password");
         password = Console.ReadLine();
-
         Console.WriteLine($"{username} created with password {password}");
         return $"{username},{password}";
     }
     public User Login(string username, string password)
     {
-
+        User user = new();
+        user.Username = username;
+        user.Password = password;
+        return user;
     }
-    public async Task WelcomeMenu()
+    public static async Task WelcomeMenu()
     {
         while (true)
         {
             Console.Clear();
             Console.WriteLine("1.Register New User\n2.Login\n3.Exit Game");
+
             if (int.TryParse(Console.ReadLine(), out int r))
             {
                 switch (r)
                 {
                     case 1:
-                        await Register(_client, Uri, Register());
-                        await PlayerMenu();
+                        User user = new();
+                        string? userDetails = user.Register();
+                        await RegisterRequest(_client, Uri, userDetails);
+                        string[] parts = userDetails.Split(",");
+                        user.Username = parts[0];
+                        user.Password = parts[1];
+                        await user.PlayerMenu(user);
                         break;
                     case 2:
                         break;
@@ -64,19 +73,19 @@ public class User
             switch (r)
             {
                 case 1:
-                    await Software.IPScanner(_client, Uri,);
+                    await Software.IPScanner(_client, Uri, user);
                     break;
                 default:
                     break;
             }
         }
     }
-    public static async Task Register(HttpClient client, Uri uri, string data)
+    public static async Task RegisterRequest(HttpClient client, Uri uri, string data)
     {
         using StringContent textContent = new StringContent(data, Encoding.UTF8, "text/plain");
         try
         {
-            using HttpResponseMessage response = await client.PostAsync(uri + "/users/register", textContent);
+            using HttpResponseMessage response = await client.PostAsync(uri + "users/register", textContent);
             var jsonResponse = await response.Content.ReadAsStringAsync();
             Console.WriteLine($"{jsonResponse}\n");
         }

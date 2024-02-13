@@ -12,9 +12,6 @@ TextPosition.Center("Welcome to GetHacked");
 //await client.GetAsync($"{server}/users");
 
 // POST REQUEST (curl -d "username=hej&password=hej" POST localhost:3000)
-User user = new();
+// MAIN MENU
 
-string plainTextData = user.Register();
-
-// Register
-await user.WelcomeMenu();
+await User.WelcomeMenu();

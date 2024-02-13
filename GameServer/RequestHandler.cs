@@ -134,6 +134,12 @@ public class RequestHandler
 
                 const string qSelectTargetId = "SELECT user_id FROM IP WHERE address = $1";
 
+                const string qReadKeyword = "select keyword from dummy_password where user_id = $1";
+                const string qCheckBF = "SELECT COUNT (*) FROM brute_force WHERE hacker_id = $1 AND target_id = $2";
+                const string qInsertBF = "INSERT INTO brute_force (hacker_id, target_id, cracking) VALUES ($1, $2, $3);";
+                const string qReadCurrentCracking = "SELECT cracking FROM brute_force WHERE hacker_id = $1 AND target_id= $2";
+                const string qUpdateBF = "UPDATE brute_force SET cracking = $1 WHERE hacker_id = $2 AND target_id= $3;";
+
                 int attackerId = 0;
                 int targetId = 0;
                 string targetIp = string.Empty;
@@ -172,7 +178,7 @@ public class RequestHandler
                 while (await readerFirewall.ReadAsync())
                 {
                     int firewallHealth = readerFirewall.GetInt32(0);
-                    message += $"Your attack was succesfull and your opponent's firewall is now at {firewallHealth}%. ";
+                    message += $" Your attack was succesfull! \n Your opponent's firewall is now at {firewallHealth}. ";
                 }
 
                 //Update HackerCoinz
@@ -187,7 +193,7 @@ public class RequestHandler
                 while (await readerHackerCoinz.ReadAsync())
                 {
                     int hackerCoinz = readerHackerCoinz.GetInt32(0);
-                    message += $"Your points went up to {hackerCoinz} ";
+                    message += $"\n Your points went up to {hackerCoinz} ";
                 }
 
                 //Update Detection
@@ -211,6 +217,76 @@ public class RequestHandler
                     else
                     {
                         message = $"Police raid - your detection level reached 100%!";
+                    }
+                }
+
+                //Get part of keyword
+
+                //Check if attack already exists in brute_force table, if not insert
+
+                var cmdCheckBF = _db.CreateCommand(qCheckBF);
+                cmdCheckBF.Parameters.AddWithValue(attackerId);
+                cmdCheckBF.Parameters.AddWithValue(targetId);
+                var rowCount = await cmdCheckBF.ExecuteScalarAsync();
+
+                int rowCountInt = Convert.ToInt32(rowCount);
+
+                if (rowCountInt == 0)
+                {
+                    var cmdReadKeyword = _db.CreateCommand(qReadKeyword);
+                    cmdReadKeyword.Parameters.AddWithValue(targetId);
+                    var readerKeyword = await cmdReadKeyword.ExecuteReaderAsync();
+
+                    string firstLetter = "";
+
+                    while (await readerKeyword.ReadAsync())
+                    {
+                        string fullKeyword = readerKeyword.GetString(0);
+                        firstLetter = fullKeyword.Substring(0, 1);
+                        message += $"\n The first letter of your target's keyword is '{firstLetter}'";
+                    }
+
+                    // INSERT values INTO brute force table
+
+                    var cmdUpdateBF = _db.CreateCommand(qInsertBF);
+                    cmdUpdateBF.Parameters.AddWithValue(attackerId);
+                    cmdUpdateBF.Parameters.AddWithValue(targetId);
+                    cmdUpdateBF.Parameters.AddWithValue(firstLetter);
+                    await cmdUpdateBF.ExecuteNonQueryAsync();
+                }
+
+                else
+
+                {
+                    // Read the existing cracking value and add new letter
+                    var cmdReadCurrentCracking = _db.CreateCommand(qReadCurrentCracking);
+                    cmdReadCurrentCracking.Parameters.AddWithValue(attackerId);
+                    cmdReadCurrentCracking.Parameters.AddWithValue(targetId);
+                    var currentCracking = await cmdReadCurrentCracking.ExecuteScalarAsync() as string;
+
+                    var cmdReadKeyword = _db.CreateCommand(qReadKeyword);
+                    cmdReadKeyword.Parameters.AddWithValue(targetId);
+                    var tKeyword = await cmdReadKeyword.ExecuteScalarAsync() as string;
+
+                    char[] Keyword = tKeyword.ToCharArray();
+
+                    string newCracking = currentCracking + Keyword[currentCracking.Length];
+
+                    // Update cracking
+                    var cmdUpdateBF = _db.CreateCommand(qUpdateBF);
+                    cmdUpdateBF.Parameters.AddWithValue(newCracking);
+                    cmdUpdateBF.Parameters.AddWithValue(attackerId);
+                    cmdUpdateBF.Parameters.AddWithValue(targetId);
+                    await cmdUpdateBF.ExecuteNonQueryAsync();
+
+                    //Read New Cracking
+                    var cmdReadNewCracking = _db.CreateCommand(qReadCurrentCracking);
+                    cmdReadNewCracking.Parameters.AddWithValue(attackerId);
+                    cmdReadNewCracking.Parameters.AddWithValue(targetId);
+                    var ReaderNewCracking = await cmdReadNewCracking.ExecuteReaderAsync();
+                    while (await ReaderNewCracking.ReadAsync())
+                    {
+                        message += $"\n You added a new letter to the target's keyword:'{newCracking}'";
                     }
                 }
             }

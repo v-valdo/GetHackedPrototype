@@ -1,5 +1,4 @@
-﻿
-namespace GameClient;
+﻿namespace GameClient;
 
 public class TextPosition
 {

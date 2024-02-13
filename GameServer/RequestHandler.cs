@@ -61,55 +61,34 @@ public class RequestHandler
             }
         }
 
-        else if (path.Contains("users/1/stats"))
+        else if (path.Contains("users/") && path.Contains("/stats"))
         {
-            string userStats = "select username, hackercoinz, detection, firewallhealth from users where id = 1;";
-            var reader = await _db.CreateCommand(userStats).ExecuteReaderAsync();
-
-            while (await reader.ReadAsync())
+            string[] segments = path.Split('/');
+            if (segments.Length >= 3)
             {
-                message += $"Username: {reader.GetString(0)}, Hackercoinz: {reader.GetInt32(1)}, Detection Rate: {reader.GetInt32(2)}, Firewall Health: {reader.GetInt32(3)}";
+                if (int.TryParse(segments[2], out int id))
+                {
+                    string userStats = $"select username, hackercoinz, detection, firewallhealth from users where id = {id};";
+                    var reader = await _db.CreateCommand(userStats).ExecuteReaderAsync();
+
+                    while (await reader.ReadAsync())
+                    {
+                        message += $"Username: {reader.GetString(0)}, Hackercoinz: {reader.GetInt32(1)}, Detection Rate: {reader.GetInt32(2)}, Firewall Health: {reader.GetInt32(3)}";
+                    }
+                }
+                else
+                {
+                    message = "Invalid user id";
+                }
+            }
+            else
+            {
+                message = "Invalid path format";
             }
         }
-        else if (path.Contains("users/2/stats"))
+        else
         {
-            string userStats = "select username, hackercoinz, detection, firewallhealth from users where id = 2;";
-            var reader = await _db.CreateCommand(userStats).ExecuteReaderAsync();
-
-            while (await reader.ReadAsync())
-            {
-                message += $"Username: {reader.GetString(0)}, Hackercoinz: {reader.GetInt32(1)}, Detection Rate: {reader.GetInt32(2)}, Firewall Health: {reader.GetInt32(3)}";
-            }
-        }
-        else if (path.Contains("users/3/stats"))
-        {
-            string userStats = "select username, hackercoinz, detection, firewallhealth from users where id = 3;";
-            var reader = await _db.CreateCommand(userStats).ExecuteReaderAsync();
-
-            while (await reader.ReadAsync())
-            {
-                message += $"Username: {reader.GetString(0)}, Hackercoinz: {reader.GetInt32(1)}, Detection Rate: {reader.GetInt32(2)}, Firewall Health: {reader.GetInt32(3)}";
-            }
-        }
-        else if (path.Contains("users/4/stats"))
-        {
-            string userStats = "select username, hackercoinz, detection, firewallhealth from users where id = 4;";
-            var reader = await _db.CreateCommand(userStats).ExecuteReaderAsync();
-
-            while (await reader.ReadAsync())
-            {
-                message += $"Username: {reader.GetString(0)}, Hackercoinz: {reader.GetInt32(1)}, Detection Rate: {reader.GetInt32(2)}, Firewall Health: {reader.GetInt32(3)}";
-            }
-        }
-        else if (path.Contains("users/5/stats"))
-        {
-            string userStats = "select username, hackercoinz, detection, firewallhealth from users where id = 5;";
-            var reader = await _db.CreateCommand(userStats).ExecuteReaderAsync();
-
-            while (await reader.ReadAsync())
-            {
-                message += $"Username: {reader.GetString(0)}, Hackercoinz: {reader.GetInt32(1)}, Detection Rate: {reader.GetInt32(2)}, Firewall Health: {reader.GetInt32(3)}";
-            }
+            message = "404 - Not Found";
         }
         // Finally prints response (message)
         Print(response, message);

@@ -38,9 +38,7 @@ public class RequestHandler
                 await Post(response, request);
                 break;
             case "PUT":
-
                 Console.WriteLine($"put request received to {request.RawUrl}");
-
                 await Put(response, request);
                 break;
         }
@@ -48,16 +46,40 @@ public class RequestHandler
     private async Task Get(HttpListenerResponse response, HttpListenerRequest request)
     {
         string message = "";
-        var path = request.Url?.AbsolutePath ?? "404";
+        var (path, parts) = await ReadRequestData(request);
 
-        if (path.Contains("users/all"))
+        if (path.Contains("ipscanner.exe"))
         {
-            string qUsers = "select username,password from users;";
-            var reader = await _db.CreateCommand(qUsers).ExecuteReaderAsync();
-
-            while (await reader.ReadAsync())
+            try
             {
-                message += $"Username: {reader.GetString(0)}, Password: {reader.GetString(1)}";
+                var qIPScanner = "select address from ip";
+
+                var qEditUserStats = @"
+            update users 
+            set hackercoinz = hackercoinz - 5, 
+            detection = detection + 5 
+            where username = $1 and password = $2
+            ";
+                string username = parts[0];
+                string password = parts[1];
+                var IPList = await _db.CreateCommand(qIPScanner).ExecuteReaderAsync();
+
+                while (await IPList.ReadAsync())
+                {
+                    message += $"IP Address found: {IPList.GetString(0)}\n";
+                }
+                await using var EditUser = _db.CreateCommand(qEditUserStats);
+                EditUser.Parameters.AddWithValue(username);
+                EditUser.Parameters.AddWithValue(password);
+                await EditUser.ExecuteNonQueryAsync();
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message);
+            }
+            finally
+            {
+                Print(response, message);
             }
         }
 
@@ -303,40 +325,6 @@ public class RequestHandler
             }
         }
 
-        if (path.Contains("ipscanner.exe"))
-        {
-            try
-            {
-                var qIPScanner = "select address from ip";
-
-                var qEditUserStats = @"
-            update users 
-            set hackercoinz = hackercoinz - 5, 
-            detection = detection + 5 
-            where username = $1 and password = $2
-            ";
-                string username = parts[0];
-                string password = parts[1];
-                var IPList = await _db.CreateCommand(qIPScanner).ExecuteReaderAsync();
-
-                while (await IPList.ReadAsync())
-                {
-                    message += $"IP Address found: {IPList.GetString(0)}\n";
-                }
-                await using var EditUser = _db.CreateCommand(qEditUserStats);
-                EditUser.Parameters.AddWithValue(username);
-                EditUser.Parameters.AddWithValue(password);
-                await EditUser.ExecuteNonQueryAsync();
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine(e.Message);
-            }
-            finally
-            {
-                Print(response, message);
-            }
-        }
     }
     static IPAddress Generate()
     {

@@ -24,7 +24,6 @@ public class RequestHandler
         Console.WriteLine($"Server listening on port {port}");
         _listener.BeginGetContext(new AsyncCallback(Route), _listener);
     }
-
     public void Stop() => _listener.Stop();
     private async void Route(IAsyncResult result)
     {
@@ -58,7 +57,7 @@ public class RequestHandler
     {
         string message = "";
         var (path, parts) = await ReadRequestData(request);
-      
+
         if (path.Contains("ipscanner.exe"))
         {
             message = await _action.IPScanner(path, parts, response);

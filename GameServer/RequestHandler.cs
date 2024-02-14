@@ -68,7 +68,13 @@ public class RequestHandler
         // register: curl -d "username,password,dummyPassword,keyword" POST http://localhost:3000/users/register
         if (path.Contains("users/register"))
         {
-            message = await _action.Register(path, parts, response);
+            message = await _action.Register(path, parts, response, this);
+            Print(response, message);
+        }
+
+        if (path.Contains("statuscenter.exe"))
+        {
+            message = await _action.ShowStats(path, parts, response);
             Print(response, message);
         }
     }
@@ -85,7 +91,7 @@ public class RequestHandler
 
         if (path.Contains("hide-me.exe"))
         {
-            message = await _action.HideMe(path, parts, response);
+            message = await _action.HideMe(path, parts, response, this);
             Print(response, message);
         }
     }

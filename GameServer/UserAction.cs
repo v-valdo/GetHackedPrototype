@@ -23,30 +23,30 @@ public class UserAction
             await connection.OpenAsync();
 
             await using var transaction = connection.BeginTransaction();
-            const string checkHackercoinzQuery = @"
+            const string qCoinCheck = @"
             SELECT hackercoinz
             FROM users
             WHERE username = $1 AND password = $2";
 
-            var cmdCheckHackercoinz = connection.CreateCommand();
-            cmdCheckHackercoinz.Transaction = transaction;
-            cmdCheckHackercoinz.CommandText = checkHackercoinzQuery;
-            cmdCheckHackercoinz.Parameters.AddWithValue(parts[0]);
-            cmdCheckHackercoinz.Parameters.AddWithValue(parts[1]);
+            var cmdCheckCoins = connection.CreateCommand();
+            cmdCheckCoins.Transaction = transaction;
+            cmdCheckCoins.CommandText = qCoinCheck;
+            cmdCheckCoins.Parameters.AddWithValue(parts[0]);
+            cmdCheckCoins.Parameters.AddWithValue(parts[1]);
 
-            var currentHackercoinzResult = await cmdCheckHackercoinz.ExecuteScalarAsync();
-            int currentHackercoinz = Convert.ToInt32(currentHackercoinzResult);
+            var currentCoinsResult = await cmdCheckCoins.ExecuteScalarAsync();
+            int currentCoins = Convert.ToInt32(currentCoinsResult);
 
             int requiredHackercoinz = 30;
 
-            if (currentHackercoinz < requiredHackercoinz)
+            if (currentCoins < requiredHackercoinz)
             {
                 await transaction.RollbackAsync();
                 message += "Not enough Hackercoinz";
             }
             else
             {
-                const string updateUserQuery = @"
+                const string qUserUpdate = @"
                 UPDATE users
                 SET hackercoinz = GREATEST(hackercoinz - 30, 0),
                     detection = 0
@@ -54,7 +54,7 @@ public class UserAction
 
                 var cmdUpdateUser = connection.CreateCommand();
                 cmdUpdateUser.Transaction = transaction;
-                cmdUpdateUser.CommandText = updateUserQuery;
+                cmdUpdateUser.CommandText = qUserUpdate;
                 cmdUpdateUser.Parameters.AddWithValue(parts[0]);
                 cmdUpdateUser.Parameters.AddWithValue(parts[1]);
                 await cmdUpdateUser.ExecuteNonQueryAsync();
@@ -64,21 +64,21 @@ public class UserAction
                 FROM users
                 WHERE username = $1 AND password = $2";
 
-                var cmdGetUserId = connection.CreateCommand();
-                cmdGetUserId.Transaction = transaction;
-                cmdGetUserId.CommandText = getUserIdQuery;
-                cmdGetUserId.Parameters.AddWithValue(parts[0]);
-                cmdGetUserId.Parameters.AddWithValue(parts[1]);
-                var userId = await cmdGetUserId.ExecuteScalarAsync();
+                var cmdUserId = connection.CreateCommand();
+                cmdUserId.Transaction = transaction;
+                cmdUserId.CommandText = getUserIdQuery;
+                cmdUserId.Parameters.AddWithValue(parts[0]);
+                cmdUserId.Parameters.AddWithValue(parts[1]);
+                var userId = await cmdUserId.ExecuteScalarAsync();
 
-                const string updateIpQuery = @"
+                const string qUpdateIP = @"
                 UPDATE ip
                 SET address = $1
                 WHERE user_id = $2";
 
                 var cmdUpdateIp = connection.CreateCommand();
                 cmdUpdateIp.Transaction = transaction;
-                cmdUpdateIp.CommandText = updateIpQuery;
+                cmdUpdateIp.CommandText = qUpdateIP;
                 cmdUpdateIp.Parameters.AddWithValue(newIP);
                 cmdUpdateIp.Parameters.AddWithValue(userId ?? 0);
                 await cmdUpdateIp.ExecuteNonQueryAsync();

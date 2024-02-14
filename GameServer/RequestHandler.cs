@@ -87,7 +87,6 @@ public class RequestHandler
             message = await _action.HideMe(path, parts, response);
             Print(response, message);
         }
-
     }
     public IPAddress Generate()
     {

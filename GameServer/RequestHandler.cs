@@ -125,7 +125,6 @@ public class RequestHandler
         response.OutputStream.Close();
         _listener.BeginGetContext(new AsyncCallback(Route), _listener);
     }
-
     private async Task<(string path, string[] parts)> ReadRequestData(HttpListenerRequest request)
     {
         var path = request.Url?.AbsolutePath ?? "404";

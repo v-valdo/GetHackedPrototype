@@ -167,7 +167,6 @@ public class UserAction
         }
         return message;
     }
-
     public async Task<string> Attack(string path, string[] parts, HttpListenerResponse response)
     {
         string message = "";

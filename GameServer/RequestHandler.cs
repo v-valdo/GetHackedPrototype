@@ -83,6 +83,35 @@ public class RequestHandler
             }
         }
 
+        else if (path.Contains("users/") && path.Contains("/stats"))
+        {
+            string[] segments = path.Split('/');
+            if (segments.Length >= 3)
+            {
+                if (int.TryParse(segments[2], out int id))
+                {
+                    string userStats = $"select username, hackercoinz, detection, firewallhealth from users where id = {id};";
+                    var reader = await _db.CreateCommand(userStats).ExecuteReaderAsync();
+
+                    while (await reader.ReadAsync())
+                    {
+                        message += $"Username: {reader.GetString(0)}, Hackercoinz: {reader.GetInt32(1)}, Detection Rate: {reader.GetInt32(2)}, Firewall Health: {reader.GetInt32(3)}";
+                    }
+                }
+                else
+                {
+                    message = "Invalid user id";
+                }
+            }
+            else
+            {
+                message = "Invalid path format";
+            }
+        }
+        else
+        {
+            message = "404 - Not Found";
+        }
         // Finally prints response (message)
         Print(response, message);
     }

@@ -58,15 +58,15 @@ public class RequestHandler
     {
         string message = "";
         var (path, parts) = await ReadRequestData(request);
-
+      
         if (path.Contains("ipscanner.exe"))
         {
             message = await _action.IPScanner(path, parts, response);
             Print(response, message);
         }
 
-        // register: curl -d "username,password,dummyPassword,keyword" POST http://localhost:3000/users/register
-        if (path.Contains("users/register"))
+        // Register User: curl -X POST http://localhost:3000/newuser -d 'username,password,dummy_password,keyword'
+        if (path.Contains("newuser"))
         {
             message = await _action.Register(path, parts, response, this);
             Print(response, message);
@@ -83,7 +83,7 @@ public class RequestHandler
         string message = "";
         var (path, parts) = await ReadRequestData(request);
 
-        if (path.Contains("attack/")) //Attack! curl -X PUT http://localhost:3000/attack/ -d 'attackerId,targetIp'
+        if (path.Contains("attack")) //Attack! curl -X PUT http://localhost:3000/attack/targetIP -d 'username,password'
         {
             message = await _action.Attack(path, parts, response);
             Print(response, message);

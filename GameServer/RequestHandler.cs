@@ -62,6 +62,7 @@ public class RequestHandler
         if (path.Contains("ipscanner.exe"))
         {
             message = await _action.IPScanner(path, parts, response);
+            Print(response, message);
         }
 
         // register: curl -d "username,password,dummyPassword,keyword" POST http://localhost:3000/users/register

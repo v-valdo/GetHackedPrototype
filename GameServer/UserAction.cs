@@ -11,16 +11,16 @@ public class UserAction
         _db = db;
     }
 
-    public async Task<string> HideMe(string path, string[] parts, HttpListenerResponse response, RequestHandler handler)
+    public string HideMe(string path, string[] parts, HttpListenerResponse response, RequestHandler handler)
     {
         string message = "";
         string newIP = handler.Generate().ToString();
         try
         {
-            await using var connection = _db.CreateConnection();
-            await connection.OpenAsync();
+            using var connection = _db.CreateConnection();
+            connection.Open();
 
-            await using var transaction = connection.BeginTransaction();
+            using var transaction = connection.BeginTransaction();
             const string qCoinCheck = @"
             SELECT hackercoinz
             FROM users
@@ -32,14 +32,14 @@ public class UserAction
             cmdCheckCoins.Parameters.AddWithValue(parts[0]);
             cmdCheckCoins.Parameters.AddWithValue(parts[1]);
 
-            var currentCoinsResult = await cmdCheckCoins.ExecuteScalarAsync();
+            var currentCoinsResult = cmdCheckCoins.ExecuteScalar();
             int currentCoins = Convert.ToInt32(currentCoinsResult);
 
             int requiredHackercoinz = 30;
 
             if (currentCoins < requiredHackercoinz)
             {
-                await transaction.RollbackAsync();
+                transaction.Rollback();
                 message += "Not enough Hackercoinz";
             }
             else
@@ -55,7 +55,7 @@ public class UserAction
                 cmdUpdateUser.CommandText = qUserUpdate;
                 cmdUpdateUser.Parameters.AddWithValue(parts[0]);
                 cmdUpdateUser.Parameters.AddWithValue(parts[1]);
-                await cmdUpdateUser.ExecuteNonQueryAsync();
+                cmdUpdateUser.ExecuteNonQuery();
 
                 const string getUserIdQuery = @"
                 SELECT id
@@ -67,7 +67,7 @@ public class UserAction
                 cmdUserId.CommandText = getUserIdQuery;
                 cmdUserId.Parameters.AddWithValue(parts[0]);
                 cmdUserId.Parameters.AddWithValue(parts[1]);
-                var userId = await cmdUserId.ExecuteScalarAsync();
+                var userId = cmdUserId.ExecuteScalar();
 
                 const string qUpdateIP = @"
                 UPDATE ip
@@ -79,9 +79,9 @@ public class UserAction
                 cmdUpdateIp.CommandText = qUpdateIP;
                 cmdUpdateIp.Parameters.AddWithValue(newIP);
                 cmdUpdateIp.Parameters.AddWithValue(userId ?? 0);
-                await cmdUpdateIp.ExecuteNonQueryAsync();
+                cmdUpdateIp.ExecuteNonQuery();
 
-                await transaction.CommitAsync();
+                transaction.Commit();
 
                 message += $"You paid 30 HackerCoinz and changed your IP to {newIP}. Your detection risk in now zero.";
             }
@@ -93,7 +93,7 @@ public class UserAction
         }
         return message;
     }
-    public async Task<string> IPScanner(string path, string[] parts, HttpListenerResponse response)
+    public string IPScanner(string path, string[] parts, HttpListenerResponse response)
     {
         string message = "";
         var qIPScanner = "select address from ip";
@@ -107,16 +107,16 @@ public class UserAction
         {
             string username = parts[0];
             string password = parts[1];
-            var IPList = await _db.CreateCommand(qIPScanner).ExecuteReaderAsync();
+            var IPList = _db.CreateCommand(qIPScanner).ExecuteReader();
 
-            while (await IPList.ReadAsync())
+            while (IPList.Read())
             {
                 message += $"IP Address found: {IPList.GetString(0)}\n";
             }
-            await using var EditUser = _db.CreateCommand(qEditUserStats);
+            using var EditUser = _db.CreateCommand(qEditUserStats);
             EditUser.Parameters.AddWithValue(username);
             EditUser.Parameters.AddWithValue(password);
-            await EditUser.ExecuteNonQueryAsync();
+            EditUser.ExecuteNonQuery();
         }
         catch (Exception e)
         {
@@ -124,7 +124,7 @@ public class UserAction
         }
         return message;
     }
-    public async Task<string> Register(string path, string[] parts, HttpListenerResponse response, RequestHandler handler)
+    public string Register(string path, string[] parts, HttpListenerResponse response, RequestHandler handler)
     {
         string message = "";
 
@@ -140,28 +140,28 @@ public class UserAction
                 return message;
             }
 
-            await using var cmd = _db.CreateCommand(qRegister);
+            using var cmd = _db.CreateCommand(qRegister);
             cmd.Parameters.AddWithValue(parts[0]); //username
             cmd.Parameters.AddWithValue(parts[1]); //password
 
-            int userId = (int)await cmd.ExecuteScalarAsync();
+            int userId = (int)cmd.ExecuteScalar();
 
             //INSERT into dummy_password table
-            await using var cmd2 = _db.CreateCommand(qAddDummy);
+            using var cmd2 = _db.CreateCommand(qAddDummy);
             cmd2.Parameters.AddWithValue(userId); //user id
             cmd2.Parameters.AddWithValue(parts[2]); //dummy password
             cmd2.Parameters.AddWithValue(parts[3]); //keyword
-            await cmd2.ExecuteNonQueryAsync();
+            cmd2.ExecuteNonQuery();
 
             //INSERT into ip table
             IPAddress generatedIP = handler.Generate();
             string userIp = generatedIP.ToString();
-            await using var cmd3 = _db.CreateCommand(qAddIp);
+            using var cmd3 = _db.CreateCommand(qAddIp);
             cmd3.Parameters.AddWithValue(userIp); //user ip
             cmd3.Parameters.AddWithValue(userId); //user id
-            await cmd3.ExecuteNonQueryAsync();
+            cmd3.ExecuteNonQuery();
 
-            await handler.GeneratePoliceIP();
+            handler.GeneratePoliceIP();
 
             message = $"User '{parts[0]}' registered successfully!";
         }
@@ -173,7 +173,7 @@ public class UserAction
         }
         return message;
     }
-    public async Task<string> Attack(string path, string[] parts, HttpListenerResponse response)
+    public string Attack(string path, string[] parts, HttpListenerResponse response)
     {
         string message = "";
 
@@ -213,18 +213,18 @@ public class UserAction
             {
                 cmdCheckPassword.Parameters.AddWithValue(username);
                 cmdCheckPassword.Parameters.AddWithValue(password);
-                using (var readerGetId = await cmdCheckPassword.ExecuteReaderAsync())
+                using (var readerGetId = cmdCheckPassword.ExecuteReader())
                 {
-                    if (await readerGetId.ReadAsync())
+                    if (readerGetId.Read())
                     {
                         //Get target id
                         using (var cmdSelectTargetId = _db.CreateCommand(qSelectTargetId))
                         {
                             cmdSelectTargetId.Parameters.AddWithValue(targetIp);
 
-                            using (var readerSelectTargetId = await cmdSelectTargetId.ExecuteReaderAsync())
+                            using (var readerSelectTargetId = cmdSelectTargetId.ExecuteReader())
                             {
-                                if (await readerSelectTargetId.ReadAsync())
+                                if (readerSelectTargetId.Read())
                                     targetId = readerSelectTargetId.GetInt32(0);
                             }
                         }
@@ -233,12 +233,12 @@ public class UserAction
                         using (var cmdUpdateFirewall = _db.CreateCommand(qUpdateFirewall))
                         {
                             cmdUpdateFirewall.Parameters.AddWithValue(targetId);
-                            await cmdUpdateFirewall.ExecuteNonQueryAsync();
+                            cmdUpdateFirewall.ExecuteNonQuery();
 
                             var cmdReadFirewall = _db.CreateCommand(qReadFirewall);
                             cmdReadFirewall.Parameters.AddWithValue(targetId);
-                            var readerFirewall = await cmdReadFirewall.ExecuteReaderAsync();
-                            while (await readerFirewall.ReadAsync())
+                            var readerFirewall = cmdReadFirewall.ExecuteReader();
+                            while (readerFirewall.Read())
                             {
                                 int firewallHealth = readerFirewall.GetInt32(0);
                                 message += $"\nYour attack was succesfull! \nYour opponent's firewall is now at {firewallHealth}. ";
@@ -247,13 +247,13 @@ public class UserAction
                         //Update HackerCoinz
                         var cmdUpdateHackerCoinz = _db.CreateCommand(qUpdateHackerCoinz);
                         cmdUpdateHackerCoinz.Parameters.AddWithValue(userId);
-                        await cmdUpdateHackerCoinz.ExecuteNonQueryAsync();
+                        cmdUpdateHackerCoinz.ExecuteNonQuery();
 
                         //Read Hackercoinz 
                         var cmdHackerCoinz = _db.CreateCommand(qReadHackerCoinz);
                         cmdHackerCoinz.Parameters.AddWithValue(userId);
-                        var readerHackerCoinz = await cmdHackerCoinz.ExecuteReaderAsync();
-                        while (await readerHackerCoinz.ReadAsync())
+                        var readerHackerCoinz = cmdHackerCoinz.ExecuteReader();
+                        while (readerHackerCoinz.Read())
                         {
                             int hackerCoinz = readerHackerCoinz.GetInt32(0);
                             message += $"\nYour have {hackerCoinz} hackercoinz ";
@@ -262,15 +262,15 @@ public class UserAction
                         //Update Detection
                         var cmdUpdateDetection = _db.CreateCommand(qUpdateDetection);
                         cmdUpdateDetection.Parameters.AddWithValue(userId);
-                        await cmdUpdateDetection.ExecuteNonQueryAsync();
+                        cmdUpdateDetection.ExecuteNonQuery();
 
                         //Read Detection 
                         int detection;
                         var cmdReadDetection = _db.CreateCommand(qReadDetection);
                         cmdReadDetection.Parameters.AddWithValue(userId);
-                        var readerDetection = await cmdReadDetection.ExecuteReaderAsync();
+                        var readerDetection = cmdReadDetection.ExecuteReader();
 
-                        while (await readerDetection.ReadAsync())
+                        while (readerDetection.Read())
                         {
                             detection = readerDetection.GetInt32(0);
                             if (detection < 100)
@@ -289,7 +289,7 @@ public class UserAction
                         var cmdCheckBF = _db.CreateCommand(qCheckBF);
                         cmdCheckBF.Parameters.AddWithValue(userId);
                         cmdCheckBF.Parameters.AddWithValue(targetId);
-                        var rowCount = await cmdCheckBF.ExecuteScalarAsync();
+                        var rowCount = cmdCheckBF.ExecuteScalar();
 
                         int rowCountInt = Convert.ToInt32(rowCount);
 
@@ -297,11 +297,11 @@ public class UserAction
                         {
                             var cmdReadKeyword = _db.CreateCommand(qReadKeyword);
                             cmdReadKeyword.Parameters.AddWithValue(targetId);
-                            var readerKeyword = await cmdReadKeyword.ExecuteReaderAsync();
+                            var readerKeyword = cmdReadKeyword.ExecuteReader();
 
                             string firstLetter = "";
 
-                            while (await readerKeyword.ReadAsync())
+                            while (readerKeyword.Read())
                             {
                                 string fullKeyword = readerKeyword.GetString(0);
                                 firstLetter = fullKeyword.Substring(0, 1);
@@ -313,7 +313,7 @@ public class UserAction
                             cmdUpdateBF.Parameters.AddWithValue(userId);
                             cmdUpdateBF.Parameters.AddWithValue(targetId);
                             cmdUpdateBF.Parameters.AddWithValue(firstLetter);
-                            await cmdUpdateBF.ExecuteNonQueryAsync();
+                            cmdUpdateBF.ExecuteNonQuery();
                         }
 
                         else
@@ -322,11 +322,11 @@ public class UserAction
                             var cmdReadCurrentCracking = _db.CreateCommand(qReadCurrentCracking);
                             cmdReadCurrentCracking.Parameters.AddWithValue(username);
                             cmdReadCurrentCracking.Parameters.AddWithValue(targetId);
-                            var currentCracking = await cmdReadCurrentCracking.ExecuteScalarAsync() as string;
+                            var currentCracking = cmdReadCurrentCracking.ExecuteScalar() as string;
 
                             var cmdReadKeyword = _db.CreateCommand(qReadKeyword);
                             cmdReadKeyword.Parameters.AddWithValue(targetId);
-                            var tKeyword = await cmdReadKeyword.ExecuteScalarAsync() as string;
+                            var tKeyword = cmdReadKeyword.ExecuteScalar() as string;
 
                             char[] Keyword = tKeyword.ToCharArray();
 
@@ -337,14 +337,14 @@ public class UserAction
                             cmdUpdateBF.Parameters.AddWithValue(newCracking);
                             cmdUpdateBF.Parameters.AddWithValue(userId);
                             cmdUpdateBF.Parameters.AddWithValue(targetId);
-                            await cmdUpdateBF.ExecuteNonQueryAsync();
+                            cmdUpdateBF.ExecuteNonQuery();
 
                             //Read New Cracking
                             var cmdReadNewCracking = _db.CreateCommand(qReadCurrentCracking);
                             cmdReadNewCracking.Parameters.AddWithValue(userId);
                             cmdReadNewCracking.Parameters.AddWithValue(targetId);
-                            var ReaderNewCracking = await cmdReadNewCracking.ExecuteReaderAsync();
-                            while (await ReaderNewCracking.ReadAsync())
+                            var ReaderNewCracking = cmdReadNewCracking.ExecuteReader();
+                            while (ReaderNewCracking.Read())
                             {
                                 message += $"\nYou added a new letter to the target's keyword:'{newCracking}'";
                             }
@@ -364,7 +364,7 @@ public class UserAction
         }
         return message;
     }
-    public async Task<string> ShowStats(string path, string[] parts, HttpListenerResponse response)
+    public string ShowStats(string path, string[] parts, HttpListenerResponse response)
     {
         string message = "";
         string userStats = @"
@@ -373,23 +373,22 @@ public class UserAction
         JOIN ip i ON u.id = i.user_id
         WHERE u.username = $1 AND u.password = $2;";
 
-        await using var cmd = _db.CreateCommand(userStats);
+        using var cmd = _db.CreateCommand(userStats);
         cmd.Parameters.AddWithValue(parts[0]);
         cmd.Parameters.AddWithValue(parts[1]);
-        await using var reader = await cmd.ExecuteReaderAsync();
+        using var reader = cmd.ExecuteReader();
 
-        if (await reader.ReadAsync())
+        if (reader.Read())
         {
             do
             {
                 message += $"Username: {reader.GetString(0)}, Hackercoinz: {reader.GetInt32(1)}, Detection Rate: {reader.GetInt32(2)}, Firewall Health: {reader.GetInt32(3)}, IP Address: {reader.GetString(4)}\n";
-            } while (await reader.ReadAsync());
+            } while (reader.Read());
         }
         else
         {
             message = "No user found with the provided username and password.";
         }
-
         return message;
     }
 }

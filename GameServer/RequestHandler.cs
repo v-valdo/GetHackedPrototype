@@ -52,45 +52,45 @@ public class RequestHandler
     {
         string message = "";
         var (path, parts) = ReadRequestData(request);
+
+        if (path.Contains("ipscanner.exe"))
+        {
+            message = _action.IPScanner(path, parts, response);
+            Print(response, message);
+        }
+
+        if (path.Contains("statuscenter.exe"))
+        {
+            message = _action.ShowStats(path, parts, response);
+            Print(response, message);
+        }
     }
     private void Post(HttpListenerResponse response, HttpListenerRequest request)
     {
         string message = "";
         var (path, parts) = ReadRequestData(request);
 
-        if (path.Contains("ipscanner.exe"))
-        {
-            message = _action.IPScanner(path, parts, response).ToString() ?? "NULL";
-            Print(response, message);
-        }
-
         // Register User: curl -X POST http://localhost:3000/newuser -d 'username,password,dummy_password,keyword'
         if (path.Contains("newuser"))
         {
-            message = await _action.Register(path, parts, response, this);
-            Print(response, message);
-        }
-
-        if (path.Contains("statuscenter.exe"))
-        {
-            message = await _action.ShowStats(path, parts, response);
+            message = _action.Register(path, parts, response, this);
             Print(response, message);
         }
     }
-    private async Task Put(HttpListenerResponse response, HttpListenerRequest request)
+    private void Put(HttpListenerResponse response, HttpListenerRequest request)
     {
         string message = "";
-        var (path, parts) = await ReadRequestData(request);
+        var (path, parts) = ReadRequestData(request);
 
         if (path.Contains("attack")) //Attack! curl -X PUT http://localhost:3000/attack/targetIP -d 'username,password'
         {
-            message = await _action.Attack(path, parts, response);
+            message = _action.Attack(path, parts, response);
             Print(response, message);
         }
 
         if (path.Contains("hide-me.exe"))
         {
-            message = await _action.HideMe(path, parts, response, this);
+            message = _action.HideMe(path, parts, response, this);
             Print(response, message);
         }
     }
@@ -101,23 +101,23 @@ public class RequestHandler
         random.NextBytes(ipBytes);
         return new IPAddress(ipBytes);
     }
-    public async Task GeneratePoliceIP()
+    public void GeneratePoliceIP()
     {
         const string qCountUsers = @$"SELECT COUNT(*) FROM users u WHERE u.id > 0";
         const string qAddPoliceIp = "INSERT INTO ip(address,user_id) VALUES ($1, $2)";
 
         var cmdCountUsers = _db.CreateCommand(qCountUsers);
-        var rowCount = await cmdCountUsers.ExecuteScalarAsync();
+        var rowCount = cmdCountUsers.ExecuteScalar();
         int rowCountInt = Convert.ToInt32(rowCount);
 
         if (rowCountInt % 3 == 1)
         {
             IPAddress generatedPoliceIP = Generate();
             string policeIp = generatedPoliceIP.ToString();
-            await using var cmd = _db.CreateCommand(qAddPoliceIp);
+            using var cmd = _db.CreateCommand(qAddPoliceIp);
             cmd.Parameters.AddWithValue(policeIp);
             cmd.Parameters.AddWithValue(0);
-            await cmd.ExecuteNonQueryAsync();
+            cmd.ExecuteNonQuery();
         }
     }
     private void Print(HttpListenerResponse response, string message)

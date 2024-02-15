@@ -166,7 +166,7 @@ public class UserAction
         }
         return message;
     }
-    public async Task<string> Heal(HttpListenerRequest request, string path, string[] parts, HttpListenerResponse response)
+    public string Heal(HttpListenerRequest request, string path, string[] parts, HttpListenerResponse response)
     {
         const string qCheckPassword = "SELECT id FROM users WHERE username = $1 AND password = $2";
 
@@ -180,12 +180,12 @@ public class UserAction
             {
                 using (var cmdCheckPassword = _db.CreateCommand(qCheckPassword))
                 {
-                    cmdCheckPassword.Parameters.AddWithValue( username);
+                    cmdCheckPassword.Parameters.AddWithValue(username);
                     cmdCheckPassword.Parameters.AddWithValue( password);
 
-                    using (var readerGetId = await cmdCheckPassword.ExecuteReaderAsync())
+                    using (var readerGetId = cmdCheckPassword.ExecuteReader())
                     {
-                        if (await readerGetId.ReadAsync())
+                        if (readerGetId.Read())
                         {
 
                             int id = readerGetId.GetInt32(0);
@@ -199,8 +199,8 @@ public class UserAction
                             cmdUpdateFirewall.Parameters.AddWithValue(id);
                             cmdUpdateCoins.Parameters.AddWithValue(id);
 
-                            await cmdUpdateFirewall.ExecuteNonQueryAsync();
-                            await cmdUpdateCoins.ExecuteNonQueryAsync();
+                            cmdUpdateFirewall.ExecuteNonQuery();
+                            cmdUpdateCoins.ExecuteNonQuery();
 
 
                             

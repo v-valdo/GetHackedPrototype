@@ -93,6 +93,11 @@ public class RequestHandler
             message = _action.HideMe(path, parts, response, this);
             Print(response, message);
         }
+        if (path.Contains("heal"))
+        {
+            message = await _action.Heal(request, path, parts, response);
+            Print(response, message);
+        }
     }
     public IPAddress Generate()
     {

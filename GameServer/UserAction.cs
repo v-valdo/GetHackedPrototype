@@ -173,6 +173,70 @@ public class UserAction
         }
         return message;
     }
+
+    public string Heal(HttpListenerRequest request, string path, string[] parts, HttpListenerResponse response)
+    {
+        const string qCheckPassword = "SELECT id FROM users WHERE username = $1 AND password = $2";
+
+        string message = "";
+        string username = parts[0];
+        string password = parts[1];
+
+        if (path.Contains("/heal"))
+        {
+            try
+            {
+                using (var cmdCheckPassword = _db.CreateCommand(qCheckPassword))
+                {
+                    cmdCheckPassword.Parameters.AddWithValue(username);
+                    cmdCheckPassword.Parameters.AddWithValue( password);
+
+                    using (var readerGetId = cmdCheckPassword.ExecuteReader())
+                    {
+                        if (readerGetId.Read())
+                        {
+
+                            int id = readerGetId.GetInt32(0);
+
+                            const string qUpdateFirewall = "UPDATE users SET firewallhealth = 100 WHERE id = $1";
+                            const string qUpdateCoins = "UPDATE users SET hackercoinz = hackercoinz - 10 WHERE id = $1";
+
+                            var cmdUpdateFirewall = _db.CreateCommand(qUpdateFirewall);
+                            var cmdUpdateCoins = _db.CreateCommand(qUpdateCoins);
+
+                            cmdUpdateFirewall.Parameters.AddWithValue(id);
+                            cmdUpdateCoins.Parameters.AddWithValue(id);
+
+                            cmdUpdateFirewall.ExecuteNonQuery();
+                            cmdUpdateCoins.ExecuteNonQuery();
+
+
+                            
+
+                            message = "User healed successfully.";
+                        }
+                        else
+                        {
+                            message = "Invalid username or password.";
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                message = "An error occurred: " + ex.Message;
+            }
+        }
+        else
+        {
+            message = "Invalid path.";
+        }
+
+        return message;
+    }
+
+
+
     public string Attack(string path, string[] parts, HttpListenerResponse response)
     {
         string message = "";

@@ -6,9 +6,9 @@ public class Animation
     {
         for (int i = 0; i < 100; i++)
         {
-            Console.WriteLine($"Configuring {software.Name}");
+            TextPosition.Center($"Configuring {software.Name}");
             Console.WriteLine();
-            Console.Write(i + "%");
+            TextPosition.Center(i + "%");
             Thread.Sleep(20);
             Console.Clear();
         }

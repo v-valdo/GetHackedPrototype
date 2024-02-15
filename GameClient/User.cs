@@ -21,18 +21,30 @@ public class User
         string? dummy = "";
         string? keyword = "";
 
-
-        TextPosition.Center("Enter Username");
-        username = Console.ReadLine();
-        TextPosition.Center("Enter Password");
-        password = Console.ReadLine();
-        TextPosition.Center("Enter Dummy Password");
-        username = Console.ReadLine();
-        TextPosition.Center("Enter Keyword (6 characters)");
-        password = Console.ReadLine();
-        Console.WriteLine($"{username} created with password {password}");
-        Thread.Sleep(250);
-        return $"{username},{password}";
+        while (true)
+        {
+            Console.Clear();
+            TextPosition.Center("Enter Username");
+            username = Console.ReadLine();
+            TextPosition.Center("Enter Password");
+            password = Console.ReadLine();
+            TextPosition.Center("Enter Dummy Password");
+            dummy = Console.ReadLine();
+            TextPosition.Center("Enter Keyword (6 characters)");
+            keyword = Console.ReadLine();
+            Console.WriteLine($"{username} created with password {password}");
+            Thread.Sleep(250);
+            if (username?.Length > 2 && password?.Length > 2 && dummy?.Length > 2 && keyword?.Length == 6)
+            {
+                return $"{username},{password},{dummy},{keyword}";
+            }
+            else
+            {
+                Console.WriteLine("Invalid user info, keep in mind - keyword has to be 6 characters");
+                Thread.Sleep(300);
+                continue;
+            }
+        }
     }
     public async Task LoginAction(string username, string password)
     {
@@ -43,8 +55,12 @@ public class User
     }
     public static User LoginMenu()
     {
+        Console.Clear();
         User user = new();
+        Console.WriteLine("enter username");
         user.Username = Console.ReadLine();
+        Console.Clear();
+        Console.WriteLine("enter password");
         user.Password = Console.ReadLine();
         return user;
     }
@@ -118,14 +134,14 @@ public class User
                 case "run hideme":
                     //software.HideMe();
                     break;
-                case "stats":
-                    //Menu.Stats(hacker);
+                case "run statuscenter":
+                    await Software.StatusCenter(_client, Uri, user);
                     break;
-                case "crash":
-                    // Animation.Raided();
-                    break;
-                case "hacked":
-                    //Animation.Hacked();
+                case "run wallbreaker":
+                    Console.Clear();
+                    Console.Write("Enter target IP: ");
+                    string ip = Console.ReadLine() ?? "0";
+                    await Software.Attack(_client, Uri, user, ip);
                     break;
             }
         }
@@ -135,8 +151,8 @@ public class User
         Console.Clear();
         Animation.Space();
         TextPosition.Center("Installed Commands");
-        TextPosition.Center("> run ipscraper");
-        TextPosition.Center("> run defender");
+        TextPosition.Center("> run ipscanner");
+        TextPosition.Center("> run wallbreaker");
         TextPosition.Center("> run hideme");
         TextPosition.Center("> run keyencryptor");
         TextPosition.Center("> run hddwiper");

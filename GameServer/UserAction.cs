@@ -131,8 +131,15 @@ public class UserAction
         string qRegister = "INSERT INTO users(username,password) VALUES ($1, $2) RETURNING id";
         string qAddDummy = "INSERT INTO dummy_password(user_id,dummy_pass,keyword) VALUES ($1, $2, $3)";
         string qAddIp = "INSERT INTO ip(address,user_id) VALUES ($1, $2)";
+
         try
         {
+            if (parts[3].Length != 6)
+            {
+                message += "invalid length of keyword";
+                return message;
+            }
+
             await using var cmd = _db.CreateCommand(qRegister);
             cmd.Parameters.AddWithValue(parts[0]); //username
             cmd.Parameters.AddWithValue(parts[1]); //password

@@ -157,7 +157,7 @@ public class UserAction
         {
             if (parts[3].Length != 6)
             {
-                message += "invalid length of keyword";
+                message += "Keyword must have 6 characters.";
                 return message;
             }
 
@@ -260,7 +260,7 @@ public class UserAction
         const string qUpdateHackerCoinz = "UPDATE users SET hackercoinz = hackercoinz + 5 WHERE id = $1";
         const string qReadHackerCoinz = "SELECT hackercoinz from users WHERE id = $1";
         const string qUpdateDetection = "UPDATE users SET detection = CASE WHEN (detection + 20) <= 100 THEN (detection + 20) ELSE 100 END WHERE id = $1";
-        const string qReadDetection = "SELECT detection from users WHERE id = $1";
+        const string qReadDetection = "SELECT detection from users WHERE username = $1 and password=$2";
         const string qReadKeyword = "SELECT keyword FROM dummy_password WHERE user_id = $1";
         const string qCheckBF = "SELECT COUNT (*) FROM brute_force WHERE hacker_id = $1 AND target_id = $2";
         const string qInsertBF = "INSERT INTO brute_force (hacker_id, target_id, cracking) VALUES ($1, $2, $3);";
@@ -283,6 +283,47 @@ public class UserAction
             {
                 message = "Error: Invalid path, please include a target IP.";
             }
+            
+            //Check Detection level
+            var cmdReadDetection = _db.CreateCommand(qReadDetection);
+            cmdReadDetection.Parameters.AddWithValue(username);
+            cmdReadDetection.Parameters.AddWithValue(password);
+            var detectionReader = cmdReadDetection.ExecuteReader();
+
+            while (detectionReader.Read())
+            {
+                if (detectionReader.GetInt32(0) > 80)
+                {
+                    message = "Detection level too high to place an attack";
+                    return message;
+                }
+            }
+
+            //Get target id
+            using (var cmdSelectTargetId = _db.CreateCommand(qSelectTargetId))
+            {
+                cmdSelectTargetId.Parameters.AddWithValue(targetIp);
+
+                using (var readerSelectTargetId = cmdSelectTargetId.ExecuteReader())
+                {
+                    if (readerSelectTargetId.Read())
+                        targetId = readerSelectTargetId.GetInt32(0);
+                }
+            }
+
+            //Check target firewall
+            var cmdReadFirewall = _db.CreateCommand(qReadFirewall);
+            cmdReadFirewall.Parameters.AddWithValue(targetId);
+            var firewallReader = cmdReadFirewall.ExecuteReader();
+
+            while (firewallReader.Read())
+            {
+                if (firewallReader.GetInt32(0) <=0)
+                {
+                    message = "Target's firewall is already at 0.";
+                    return message;
+                }
+            }
 
             //Check user/pw
             using (var cmdCheckPassword = _db.CreateCommand(qCheckPassword))
@@ -293,17 +334,7 @@ public class UserAction
                 {
                     if (readerGetId.Read())
                     {
-                        //Get target id
-                        using (var cmdSelectTargetId = _db.CreateCommand(qSelectTargetId))
-                        {
-                            cmdSelectTargetId.Parameters.AddWithValue(targetIp);
-
-                            using (var readerSelectTargetId = cmdSelectTargetId.ExecuteReader())
-                            {
-                                if (readerSelectTargetId.Read())
-                                    targetId = readerSelectTargetId.GetInt32(0);
-                            }
-                        }
+                        
                         //Update & read firewall
                         userId = readerGetId.GetInt32(0);
                         using (var cmdUpdateFirewall = _db.CreateCommand(qUpdateFirewall))
@@ -311,7 +342,7 @@ public class UserAction
                             cmdUpdateFirewall.Parameters.AddWithValue(targetId);
                             cmdUpdateFirewall.ExecuteNonQuery();
 
-                            var cmdReadFirewall = _db.CreateCommand(qReadFirewall);
+                            cmdReadFirewall = _db.CreateCommand(qReadFirewall);
                             cmdReadFirewall.Parameters.AddWithValue(targetId);
                             var readerFirewall = cmdReadFirewall.ExecuteReader();
                             while (readerFirewall.Read())
@@ -342,8 +373,9 @@ public class UserAction
 
                         //Read Detection 
                         int detection;
-                        var cmdReadDetection = _db.CreateCommand(qReadDetection);
-                        cmdReadDetection.Parameters.AddWithValue(userId);
+                        cmdReadDetection = _db.CreateCommand(qReadDetection);
+                        cmdReadDetection.Parameters.AddWithValue(username);
+                        cmdReadDetection.Parameters.AddWithValue(password);
                         var readerDetection = cmdReadDetection.ExecuteReader();
 
                         while (readerDetection.Read())

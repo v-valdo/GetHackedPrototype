@@ -166,7 +166,7 @@ public class UserAction
         }
         return message;
     }
-    public async Task Heal(HttpListenerResponse response, string path, string[] parts, HttpListenerRequest request)
+    public async Task<string> Heal(HttpListenerRequest request, string path, string[] parts, HttpListenerResponse response)
     {
         const string qCheckPassword = "SELECT id FROM users WHERE username = $1 AND password = $2";
 
@@ -180,20 +180,30 @@ public class UserAction
             {
                 using (var cmdCheckPassword = _db.CreateCommand(qCheckPassword))
                 {
-                    cmdCheckPassword.Parameters.AddWithValue("$1", username);
-                    cmdCheckPassword.Parameters.AddWithValue("$2", password);
+                    cmdCheckPassword.Parameters.AddWithValue( username);
+                    cmdCheckPassword.Parameters.AddWithValue( password);
 
                     using (var readerGetId = await cmdCheckPassword.ExecuteReaderAsync())
                     {
                         if (await readerGetId.ReadAsync())
                         {
+
                             int id = readerGetId.GetInt32(0);
 
-                            string updateFirewall = $"UPDATE users SET firewallhealth = 100 WHERE id = $1";
-                            string updateCoins = $"UPDATE users SET hackercoinz = hackercoinz + 10 WHERE id = $1";
+                            const string qUpdateFirewall = "UPDATE users SET firewallhealth = 100 WHERE id = $1";
+                            const string qUpdateCoins = "UPDATE users SET hackercoinz = hackercoinz - 10 WHERE id = $1";
 
-                            await _db.CreateCommand(updateFirewall).ExecuteNonQueryAsync();
-                            await _db.CreateCommand(updateCoins).ExecuteNonQueryAsync();
+                            var cmdUpdateFirewall = _db.CreateCommand(qUpdateFirewall);
+                            var cmdUpdateCoins = _db.CreateCommand(qUpdateCoins);
+
+                            cmdUpdateFirewall.Parameters.AddWithValue(id);
+                            cmdUpdateCoins.Parameters.AddWithValue(id);
+
+                            await cmdUpdateFirewall.ExecuteNonQueryAsync();
+                            await cmdUpdateCoins.ExecuteNonQueryAsync();
+
+
+                            
 
                             message = "User healed successfully.";
                         }
@@ -214,7 +224,7 @@ public class UserAction
             message = "Invalid path.";
         }
 
-        await SendResponse(response, message);
+        return message;
     }
 
     public async Task<string> Attack(string path, string[] parts, HttpListenerResponse response)

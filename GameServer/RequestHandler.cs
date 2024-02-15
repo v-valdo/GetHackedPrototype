@@ -95,7 +95,7 @@ public class RequestHandler
         }
         if (path.Contains("heal"))
         {
-            message = await _action.Heal(request, path, parts, response);
+            message = _action.Heal(request, path, parts, response);
             Print(response, message);
         }
     }

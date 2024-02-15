@@ -173,7 +173,6 @@ public class UserAction
         }
         return message;
     }
-
     public string Heal(HttpListenerRequest request, string path, string[] parts, HttpListenerResponse response)
     {
         const string qCheckPassword = "SELECT id FROM users WHERE username = $1 AND password = $2";
@@ -189,13 +188,12 @@ public class UserAction
                 using (var cmdCheckPassword = _db.CreateCommand(qCheckPassword))
                 {
                     cmdCheckPassword.Parameters.AddWithValue(username);
-                    cmdCheckPassword.Parameters.AddWithValue( password);
+                    cmdCheckPassword.Parameters.AddWithValue(password);
 
                     using (var readerGetId = cmdCheckPassword.ExecuteReader())
                     {
                         if (readerGetId.Read())
                         {
-
                             int id = readerGetId.GetInt32(0);
 
                             const string qUpdateFirewall = "UPDATE users SET firewallhealth = 100 WHERE id = $1";
@@ -209,10 +207,6 @@ public class UserAction
 
                             cmdUpdateFirewall.ExecuteNonQuery();
                             cmdUpdateCoins.ExecuteNonQuery();
-
-
-                            
-
                             message = "User healed successfully.";
                         }
                         else
@@ -234,9 +228,6 @@ public class UserAction
 
         return message;
     }
-
-
-
     public string Attack(string path, string[] parts, HttpListenerResponse response)
     {
         string message = "";

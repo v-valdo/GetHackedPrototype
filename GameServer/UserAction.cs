@@ -96,7 +96,7 @@ public class UserAction
     public string IPScanner(string path, string[] parts, HttpListenerResponse response)
     {
         string message = "";
-        var qIPScanner = "select address from ip";
+        var qIPScanner = "SELECT address FROM ip ORDER BY RANDOM() LIMIT 3;";
         var qEditUserStats = @"
             update users 
             set hackercoinz = hackercoinz - 5, 
@@ -108,7 +108,6 @@ public class UserAction
             string username = parts[0];
             string password = parts[1];
             var IPList = _db.CreateCommand(qIPScanner).ExecuteReader();
-
             while (IPList.Read())
             {
                 message += $"IP Address found: {IPList.GetString(0)}\n";

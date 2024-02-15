@@ -18,6 +18,9 @@ public class User
     {
         string? username = "";
         string? password = "";
+        string? dummy = "";
+        string? keyword = "";
+
 
         TextPosition.Center("Enter Username");
         username = Console.ReadLine();

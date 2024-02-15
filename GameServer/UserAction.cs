@@ -103,10 +103,32 @@ public class UserAction
             detection = detection + 5 
             where username = $1 and password = $2
             ";
+
+        var qCheckCoins = @"
+        select hackercoinz 
+        from users 
+        where username = $1 
+        and password = $2";
+
+        string username = parts[0];
+        string password = parts[1];
+
         try
         {
-            string username = parts[0];
-            string password = parts[1];
+            var checkCoins = _db.CreateCommand(qCheckCoins);
+            checkCoins.Parameters.AddWithValue(username);
+            checkCoins.Parameters.AddWithValue(password);
+            var reader = checkCoins.ExecuteReader();
+
+            while (reader.Read())
+            {
+                if (reader.GetInt32(0) <= 5)
+                {
+                    message = "Not enough HackerCoinz";
+                    return message;
+                }
+            }
+
             var IPList = _db.CreateCommand(qIPScanner).ExecuteReader();
             while (IPList.Read())
             {

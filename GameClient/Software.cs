@@ -1,4 +1,6 @@
 ﻿namespace GameClient;
+using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Text;
 public class Software
 {
@@ -12,7 +14,7 @@ public class Software
         using StringContent textContent = new StringContent(data, Encoding.UTF8, "text/plain");
         try
         {
-            using HttpResponseMessage response = await client.PostAsync(client.BaseAddress + "users/register", textContent);
+            using HttpResponseMessage response = await client.PostAsync(client.BaseAddress + "newuser", textContent);
             var jsonResponse = await response.Content.ReadAsStringAsync();
             Console.WriteLine($"{jsonResponse}\n");
         }
@@ -30,9 +32,13 @@ public class Software
         Animation.Loading(IPScanner);
         try
         {
-            using HttpResponseMessage response = await client.PutAsync(uri + "ipscanner.exe", textContent);
-            var jsonResponse = await response.Content.ReadAsStringAsync();
-            Console.WriteLine($"{jsonResponse}\n");
+            using (var requestMessage =
+                        new HttpRequestMessage(HttpMethod.Get, "localhost:3000/ipscanner.exe"))
+            {
+                requestMessage.Headers.Authorization =
+                new AuthenticationHeaderValue(textContent.ToString());
+                await client.SendAsync(requestMessage);
+            }
         }
         catch (Exception e)
         {

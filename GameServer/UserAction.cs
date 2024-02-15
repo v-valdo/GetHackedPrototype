@@ -166,7 +166,56 @@ public class UserAction
         }
         return message;
     }
+    public async Task Heal(HttpListenerResponse response, string path, string[] parts, HttpListenerRequest request)
+    {
+        const string qCheckPassword = "SELECT id FROM users WHERE username = $1 AND password = $2";
 
+        string message = "";
+        string username = parts[0];
+        string password = parts[1];
+
+        if (path.Contains("/heal"))
+        {
+            try
+            {
+                using (var cmdCheckPassword = _db.CreateCommand(qCheckPassword))
+                {
+                    cmdCheckPassword.Parameters.AddWithValue("$1", username);
+                    cmdCheckPassword.Parameters.AddWithValue("$2", password);
+
+                    using (var readerGetId = await cmdCheckPassword.ExecuteReaderAsync())
+                    {
+                        if (await readerGetId.ReadAsync())
+                        {
+                            int id = readerGetId.GetInt32(0);
+
+                            string updateFirewall = $"UPDATE users SET firewallhealth = 100 WHERE id = $1";
+                            string updateCoins = $"UPDATE users SET hackercoinz = hackercoinz + 10 WHERE id = $1";
+
+                            await _db.CreateCommand(updateFirewall).ExecuteNonQueryAsync();
+                            await _db.CreateCommand(updateCoins).ExecuteNonQueryAsync();
+
+                            message = "User healed successfully.";
+                        }
+                        else
+                        {
+                            message = "Invalid username or password.";
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                message = "An error occurred: " + ex.Message;
+            }
+        }
+        else
+        {
+            message = "Invalid path.";
+        }
+
+        await SendResponse(response, message);
+    }
 
     public async Task<string> Attack(string path, string[] parts, HttpListenerResponse response)
     {

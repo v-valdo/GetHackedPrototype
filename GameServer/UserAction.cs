@@ -136,7 +136,7 @@ public class UserAction
         {
             if (parts[3].Length != 6)
             {
-                message += "invalid length of keyword";
+                message += "Keyword must have 6 characters.";
                 return message;
             }
 

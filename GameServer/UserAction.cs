@@ -173,13 +173,10 @@ public class UserAction
         }
         return message;
     }
-<<<<<<< HEAD
+
     public string Heal(HttpListenerRequest request, string path, string[] parts, HttpListenerResponse response)
     {
         const string qCheckPassword = "SELECT id FROM users WHERE username = $1 AND password = $2";
-=======
-<<<<<<< HEAD
->>>>>>> main
 
         string message = "";
         string username = parts[0];
@@ -238,10 +235,9 @@ public class UserAction
         return message;
     }
 
-    public async Task<string> Attack(string path, string[] parts, HttpListenerResponse response)
-=======
+
+
     public string Attack(string path, string[] parts, HttpListenerResponse response)
->>>>>>> bc16e962b4a4e1dae8359a708574c60b028229f7
     {
         string message = "";
 

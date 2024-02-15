@@ -18,10 +18,17 @@ public class User
     {
         string? username = "";
         string? password = "";
+        string? dummy = "";
+        string? keyword = "";
+
 
         TextPosition.Center("Enter Username");
         username = Console.ReadLine();
         TextPosition.Center("Enter Password");
+        password = Console.ReadLine();
+        TextPosition.Center("Enter Dummy Password");
+        username = Console.ReadLine();
+        TextPosition.Center("Enter Keyword (6 characters)");
         password = Console.ReadLine();
         Console.WriteLine($"{username} created with password {password}");
         Thread.Sleep(250);
@@ -77,7 +84,7 @@ public class User
         using StringContent textContent = new StringContent(data, Encoding.UTF8, "text/plain");
         try
         {
-            using HttpResponseMessage response = await client.PostAsync(uri + "users/register", textContent);
+            using HttpResponseMessage response = await client.PostAsync(uri + "newuser", textContent);
             var jsonResponse = await response.Content.ReadAsStringAsync();
             Console.WriteLine($"{jsonResponse}\n");
         }

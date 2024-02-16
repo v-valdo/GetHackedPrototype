@@ -279,7 +279,7 @@ public class UserAction
         const string qUpdateHackerCoinz = "UPDATE users SET hackercoinz = hackercoinz + 5 WHERE id = $1";
         const string qReadHackerCoinz = "SELECT hackercoinz from users WHERE id = $1";
         const string qUpdateDetection = "UPDATE users SET detection = CASE WHEN (detection + 20) <= 100 THEN (detection + 20) ELSE 100 END WHERE id = $1";
-        const string qReadDetection = "SELECT detection from users WHERE username = $1 and password=$2";
+        const string qReadDetection = "SELECT detection from users WHERE id = $1";
         const string qReadKeyword = "SELECT keyword FROM dummy_password WHERE user_id = $1";
         const string qCheckBF = "SELECT COUNT (*) FROM brute_force WHERE hacker_id = $1 AND target_id = $2";
         const string qInsertBF = "INSERT INTO brute_force (hacker_id, target_id, cracking) VALUES ($1, $2, $3);";
@@ -289,11 +289,12 @@ public class UserAction
         {
             int targetId = 0;
             int userId = 0;
-            string targetIp = string.Empty;
-            string username = parts[0];
-            string password = parts[1];
+            string username = parts[0]; //body data: username
+            string password = parts[1]; //body data: password
             string[] items = path.Split("/");
+            string targetIp = items.Last(); //data in path: target IP 
 
+            // Checks if path contains IP
             if (path.Contains("/"))
             {
                 targetIp = items.Last();
@@ -303,10 +304,36 @@ public class UserAction
                 message = "Error: Invalid path, please include a target IP.";
             }
 
+            //Checks if target IP exists & gets target ID
+            using (var cmdSelectTargetId = _db.CreateCommand(qSelectTargetId))
+            {
+                cmdSelectTargetId.Parameters.AddWithValue(targetIp);
+
+                using (var readerSelectTargetId = cmdSelectTargetId.ExecuteReader())
+                {
+                    if (readerSelectTargetId.Read())
+                    {
+                        targetId = readerSelectTargetId.GetInt32(0);
+                    }
+                    else
+                    {
+                        message = "Target IP does not exist.";
+                        return message;
+                    }
+                }
+            }
+
+            //Checks if target is police
+            if (targetId ==0)
+            {
+                //Policemethod!
+                message = "You tried to hack the police.";
+                return message;
+            }
+
             //Check Detection level
             var cmdReadDetection = _db.CreateCommand(qReadDetection);
-            cmdReadDetection.Parameters.AddWithValue(username);
-            cmdReadDetection.Parameters.AddWithValue(password);
+            cmdReadDetection.Parameters.AddWithValue(userId);
             var detectionReader = cmdReadDetection.ExecuteReader();
 
             while (detectionReader.Read())
@@ -318,19 +345,7 @@ public class UserAction
                 }
             }
 
-            //Get target id
-            using (var cmdSelectTargetId = _db.CreateCommand(qSelectTargetId))
-            {
-                cmdSelectTargetId.Parameters.AddWithValue(targetIp);
-
-                using (var readerSelectTargetId = cmdSelectTargetId.ExecuteReader())
-                {
-                    if (readerSelectTargetId.Read())
-                        targetId = readerSelectTargetId.GetInt32(0);
-                }
-            }
-
-            //Check target firewall
+            /*Check target firewall - might not be needed
             var cmdReadFirewall = _db.CreateCommand(qReadFirewall);
             cmdReadFirewall.Parameters.AddWithValue(targetId);
             var firewallReader = cmdReadFirewall.ExecuteReader();
@@ -342,148 +357,131 @@ public class UserAction
                     message = "Target's firewall is already at 0.";
                     return message;
                 }
+            }*/
+
+            //Update firewall
+            using (var cmdUpdateFirewall = _db.CreateCommand(qUpdateFirewall))
+            {
+                cmdUpdateFirewall.Parameters.AddWithValue(targetId);
+                cmdUpdateFirewall.ExecuteNonQuery();
+
+                var cmdReadFirewall = _db.CreateCommand(qReadFirewall);
+                cmdReadFirewall.Parameters.AddWithValue(targetId);
+                var readerFirewall = cmdReadFirewall.ExecuteReader();
+                while (readerFirewall.Read())
+                {
+                    int firewallHealth = readerFirewall.GetInt32(0);
+                    message += $"\nYour attack was succesfull! \nYour opponent's firewall is now at {firewallHealth}. ";
+                }
             }
 
-            //Check user/pw
-            using (var cmdCheckPassword = _db.CreateCommand(qCheckPassword))
+            //Update HackerCoinz
+            var cmdUpdateHackerCoinz = _db.CreateCommand(qUpdateHackerCoinz);
+            cmdUpdateHackerCoinz.Parameters.AddWithValue(userId);
+            cmdUpdateHackerCoinz.ExecuteNonQuery();
+
+            //Read updated Hackercoinz 
+            var cmdHackerCoinz = _db.CreateCommand(qReadHackerCoinz);
+            cmdHackerCoinz.Parameters.AddWithValue(userId);
+            var readerHackerCoinz = cmdHackerCoinz.ExecuteReader();
+            while (readerHackerCoinz.Read())
             {
-                cmdCheckPassword.Parameters.AddWithValue(username);
-                cmdCheckPassword.Parameters.AddWithValue(password);
-                using (var readerGetId = cmdCheckPassword.ExecuteReader())
+                int hackerCoinz = readerHackerCoinz.GetInt32(0);
+                message += $"\nYour have {hackerCoinz} hackercoinz ";
+            }
+
+            //Update Detection
+            var cmdUpdateDetection = _db.CreateCommand(qUpdateDetection);
+            cmdUpdateDetection.Parameters.AddWithValue(userId);
+            cmdUpdateDetection.ExecuteNonQuery();
+
+            //Read uppdated Detection 
+            int detection;
+            cmdReadDetection = _db.CreateCommand(qReadDetection);
+            cmdReadDetection.Parameters.AddWithValue(userId);
+            var readerDetection = cmdReadDetection.ExecuteReader();
+
+            while (readerDetection.Read())
+            {
+                detection = readerDetection.GetInt32(0);
+                if (detection < 100)
                 {
-                    if (readerGetId.Read())
-                    {
-                        //Update & read firewall
-                        userId = readerGetId.GetInt32(0);
-                        using (var cmdUpdateFirewall = _db.CreateCommand(qUpdateFirewall))
-                        {
-                            cmdUpdateFirewall.Parameters.AddWithValue(targetId);
-                            cmdUpdateFirewall.ExecuteNonQuery();
+                    message += $"and your detection went up to {detection}%. ";
+                }
+                else
+                {
+                    message = $"Police raid - your detection level reached 100%!";
+                }
+            }
 
-                            cmdReadFirewall = _db.CreateCommand(qReadFirewall);
-                            cmdReadFirewall.Parameters.AddWithValue(targetId);
-                            var readerFirewall = cmdReadFirewall.ExecuteReader();
-                            while (readerFirewall.Read())
-                            {
-                                int firewallHealth = readerFirewall.GetInt32(0);
-                                message += $"\nYour attack was succesfull! \nYour opponent's firewall is now at {firewallHealth}. ";
-                            }
-                        }
-                        //Update HackerCoinz
-                        var cmdUpdateHackerCoinz = _db.CreateCommand(qUpdateHackerCoinz);
-                        cmdUpdateHackerCoinz.Parameters.AddWithValue(userId);
-                        cmdUpdateHackerCoinz.ExecuteNonQuery();
+            //Get part of keyword
+            //Check if attack already exists in brute_force table, if not insert
 
-                        //Read Hackercoinz 
-                        var cmdHackerCoinz = _db.CreateCommand(qReadHackerCoinz);
-                        cmdHackerCoinz.Parameters.AddWithValue(userId);
-                        var readerHackerCoinz = cmdHackerCoinz.ExecuteReader();
-                        while (readerHackerCoinz.Read())
-                        {
-                            int hackerCoinz = readerHackerCoinz.GetInt32(0);
-                            message += $"\nYour have {hackerCoinz} hackercoinz ";
-                        }
+            var cmdCheckBF = _db.CreateCommand(qCheckBF);
+            cmdCheckBF.Parameters.AddWithValue(userId);
+            cmdCheckBF.Parameters.AddWithValue(targetId);
+            var rowCount = cmdCheckBF.ExecuteScalar();
 
-                        //Update Detection
-                        var cmdUpdateDetection = _db.CreateCommand(qUpdateDetection);
-                        cmdUpdateDetection.Parameters.AddWithValue(userId);
-                        cmdUpdateDetection.ExecuteNonQuery();
+            int rowCountInt = Convert.ToInt32(rowCount);
 
-                        //Read Detection 
-                        int detection;
-                        cmdReadDetection = _db.CreateCommand(qReadDetection);
-                        cmdReadDetection.Parameters.AddWithValue(username);
-                        cmdReadDetection.Parameters.AddWithValue(password);
-                        var readerDetection = cmdReadDetection.ExecuteReader();
+            if (rowCountInt == 0)
+            {
+                var cmdReadKeyword = _db.CreateCommand(qReadKeyword);
+                cmdReadKeyword.Parameters.AddWithValue(targetId);
+                var readerKeyword = cmdReadKeyword.ExecuteReader();
 
-                        while (readerDetection.Read())
-                        {
-                            detection = readerDetection.GetInt32(0);
-                            if (detection < 100)
-                            {
-                                message += $"and your detection went up to {detection}%. ";
-                            }
-                            else
-                            {
-                                message = $"Police raid - your detection level reached 100%!";
-                            }
-                        }
+                string firstLetter = "";
 
-                        //Get part of keyword
-                        //Check if attack already exists in brute_force table, if not insert
+                while (readerKeyword.Read())
+                {
+                    string fullKeyword = readerKeyword.GetString(0);
+                    firstLetter = fullKeyword.Substring(0, 1);
+                    message += $"\nThe first letter of your target's keyword is '{firstLetter}'";
+                }
 
-                        var cmdCheckBF = _db.CreateCommand(qCheckBF);
-                        cmdCheckBF.Parameters.AddWithValue(userId);
-                        cmdCheckBF.Parameters.AddWithValue(targetId);
-                        var rowCount = cmdCheckBF.ExecuteScalar();
+                // INSERT values INTO brute force table
+                var cmdUpdateBF = _db.CreateCommand(qInsertBF);
+                cmdUpdateBF.Parameters.AddWithValue(userId);
+                cmdUpdateBF.Parameters.AddWithValue(targetId);
+                cmdUpdateBF.Parameters.AddWithValue(firstLetter);
+                cmdUpdateBF.ExecuteNonQuery();
+            }
 
-                        int rowCountInt = Convert.ToInt32(rowCount);
+            else
+            {
+                // Read the existing cracking value and add new letter
+                var cmdReadCurrentCracking = _db.CreateCommand(qReadCurrentCracking);
+                cmdReadCurrentCracking.Parameters.AddWithValue(username);
+                cmdReadCurrentCracking.Parameters.AddWithValue(targetId);
+                var currentCracking = cmdReadCurrentCracking.ExecuteScalar() as string;
 
-                        if (rowCountInt == 0)
-                        {
-                            var cmdReadKeyword = _db.CreateCommand(qReadKeyword);
-                            cmdReadKeyword.Parameters.AddWithValue(targetId);
-                            var readerKeyword = cmdReadKeyword.ExecuteReader();
+                var cmdReadKeyword = _db.CreateCommand(qReadKeyword);
+                cmdReadKeyword.Parameters.AddWithValue(targetId);
+                var tKeyword = cmdReadKeyword.ExecuteScalar() as string;
 
-                            string firstLetter = "";
+                char[] Keyword = tKeyword.ToCharArray();
 
-                            while (readerKeyword.Read())
-                            {
-                                string fullKeyword = readerKeyword.GetString(0);
-                                firstLetter = fullKeyword.Substring(0, 1);
-                                message += $"\nThe first letter of your target's keyword is '{firstLetter}'";
-                            }
+                string newCracking = currentCracking + Keyword[currentCracking.Length];
 
-                            // INSERT values INTO brute force table
-                            var cmdUpdateBF = _db.CreateCommand(qInsertBF);
-                            cmdUpdateBF.Parameters.AddWithValue(userId);
-                            cmdUpdateBF.Parameters.AddWithValue(targetId);
-                            cmdUpdateBF.Parameters.AddWithValue(firstLetter);
-                            cmdUpdateBF.ExecuteNonQuery();
-                        }
+                // Update cracking
+                var cmdUpdateBF = _db.CreateCommand(qUpdateBF);
+                cmdUpdateBF.Parameters.AddWithValue(newCracking);
+                cmdUpdateBF.Parameters.AddWithValue(userId);
+                cmdUpdateBF.Parameters.AddWithValue(targetId);
+                cmdUpdateBF.ExecuteNonQuery();
 
-                        else
-                        {
-                            // Read the existing cracking value and add new letter
-                            var cmdReadCurrentCracking = _db.CreateCommand(qReadCurrentCracking);
-                            cmdReadCurrentCracking.Parameters.AddWithValue(username);
-                            cmdReadCurrentCracking.Parameters.AddWithValue(targetId);
-                            var currentCracking = cmdReadCurrentCracking.ExecuteScalar() as string;
-
-                            var cmdReadKeyword = _db.CreateCommand(qReadKeyword);
-                            cmdReadKeyword.Parameters.AddWithValue(targetId);
-                            var tKeyword = cmdReadKeyword.ExecuteScalar() as string;
-
-                            char[] Keyword = tKeyword.ToCharArray();
-
-                            string newCracking = currentCracking + Keyword[currentCracking.Length];
-
-                            // Update cracking
-                            var cmdUpdateBF = _db.CreateCommand(qUpdateBF);
-                            cmdUpdateBF.Parameters.AddWithValue(newCracking);
-                            cmdUpdateBF.Parameters.AddWithValue(userId);
-                            cmdUpdateBF.Parameters.AddWithValue(targetId);
-                            cmdUpdateBF.ExecuteNonQuery();
-
-                            //Read New Cracking
-                            var cmdReadNewCracking = _db.CreateCommand(qReadCurrentCracking);
-                            cmdReadNewCracking.Parameters.AddWithValue(userId);
-                            cmdReadNewCracking.Parameters.AddWithValue(targetId);
-                            var ReaderNewCracking = cmdReadNewCracking.ExecuteReader();
-                            while (ReaderNewCracking.Read())
-                            {
-                                message += $"\nYou added a new letter to the target's keyword:'{newCracking}'";
-                            }
-                        }
-                    }
-                    else
-                    {
-                        // User not identified
-                        message = $"\nUser identification not successful.";
-                    }
+                //Read New Cracking
+                var cmdReadNewCracking = _db.CreateCommand(qReadCurrentCracking);
+                cmdReadNewCracking.Parameters.AddWithValue(userId);
+                cmdReadNewCracking.Parameters.AddWithValue(targetId);
+                var ReaderNewCracking = cmdReadNewCracking.ExecuteReader();
+                while (ReaderNewCracking.Read())
+                {
+                    message += $"\nYou added a new letter to the target's keyword:'{newCracking}'";
                 }
             }
         }
+
         catch (Exception e)
         {
             Console.WriteLine($"Unexpected error: {e.Message}");
@@ -536,5 +534,5 @@ public class UserAction
         }
 
         return true;
-    }
+    }  
 }

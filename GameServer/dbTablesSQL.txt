@@ -30,7 +30,7 @@ ADD CONSTRAINT FK_dummy_password_user_id FOREIGN KEY (user_id) REFERENCES users(
 CREATE TABLE brute_force(
 id SERIAL NOT NULL,
 hacker_id INT NOT NULL,
-target_id INT NOT NULL,
+target_ip TEXT NOT NULL,
 cracking TEXT NOT NULL
 );
 ALTER TABLE brute_force 

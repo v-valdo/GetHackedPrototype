@@ -13,6 +13,10 @@ public class UserAction
 
     public string HideMe(string path, string[] parts, HttpListenerResponse response, RequestHandler handler)
     {
+        if (!UserExists(parts))
+        {
+            return "User doesnt exist";
+        }
         string message = "";
         string newIP = handler.Generate().ToString();
         try
@@ -95,6 +99,11 @@ public class UserAction
     }
     public string IPScanner(string path, string[] parts, HttpListenerResponse response)
     {
+        if (!UserExists(parts))
+        {
+            return "User doesnt exist";
+        }
+
         string message = "";
         var qIPScanner = "SELECT address FROM ip ORDER BY RANDOM() LIMIT 3;";
         var qEditUserStats = @"
@@ -196,6 +205,11 @@ public class UserAction
     }
     public string Heal(HttpListenerRequest request, string path, string[] parts, HttpListenerResponse response)
     {
+        if (!UserExists(parts))
+        {
+            return "User doesnt exist";
+        }
+
         const string qCheckPassword = "SELECT id FROM users WHERE username = $1 AND password = $2";
 
         string message = "";
@@ -251,6 +265,11 @@ public class UserAction
     }
     public string Attack(string path, string[] parts, HttpListenerResponse response)
     {
+        if (!UserExists(parts))
+        {
+            return "User doesnt exist";
+        }
+
         string message = "";
 
         const string qCheckPassword = "SELECT id from users WHERE username = $1 and password=$2";
@@ -473,6 +492,11 @@ public class UserAction
     }
     public string ShowStats(string path, string[] parts, HttpListenerResponse response)
     {
+        if (!UserExists(parts))
+        {
+            return "User doesnt exist";
+        }
+
         string message = "";
         string userStats = @"
         SELECT u.username, u.hackercoinz, u.detection, u.firewallhealth, i.address
@@ -498,9 +522,8 @@ public class UserAction
         }
         return message;
     }
-    public string UserIdentification(string path, string[] parts, HttpListenerResponse response)
+    public bool UserExists(string[] parts)
     {
-        string message = "";
         var qCheckUser = "SELECT COUNT(*) FROM users WHERE username = $1 AND password = $2;";
         var checkUserCmd = _db.CreateCommand(qCheckUser);
         checkUserCmd.Parameters.AddWithValue(parts[0]);
@@ -509,10 +532,9 @@ public class UserAction
 
         if (userCount == 0)
         {
-            message = "User doesn't exist";
-            return message;
+            return false;
         }
 
-        return message;
+        return true;
     }
 }

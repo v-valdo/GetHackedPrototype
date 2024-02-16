@@ -30,7 +30,13 @@ public class RequestHandler
         var context = _listener.EndGetContext(result);
         var request = context.Request;
         var response = context.Response;
-        var path = request.Url?.AbsolutePath;
+        //var path = request.Url?.AbsolutePath;
+
+        var (path, parts) = ReadRequestData(request);
+        if (request.HasEntityBody)
+        {
+            _action.UserIdentification(path, parts, response);
+        }
 
         switch (request.HttpMethod)
         {

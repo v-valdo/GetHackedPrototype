@@ -283,7 +283,7 @@ public class UserAction
             {
                 message = "Error: Invalid path, please include a target IP.";
             }
-            
+
             //Check Detection level
             var cmdReadDetection = _db.CreateCommand(qReadDetection);
             cmdReadDetection.Parameters.AddWithValue(username);
@@ -318,7 +318,7 @@ public class UserAction
 
             while (firewallReader.Read())
             {
-                if (firewallReader.GetInt32(0) <=0)
+                if (firewallReader.GetInt32(0) <= 0)
                 {
                     message = "Target's firewall is already at 0.";
                     return message;
@@ -334,7 +334,6 @@ public class UserAction
                 {
                     if (readerGetId.Read())
                     {
-                        
                         //Update & read firewall
                         userId = readerGetId.GetInt32(0);
                         using (var cmdUpdateFirewall = _db.CreateCommand(qUpdateFirewall))
@@ -497,6 +496,23 @@ public class UserAction
         {
             message = "No user found with the provided username and password.";
         }
+        return message;
+    }
+    public string UserIdentification(string path, string[] parts, HttpListenerResponse response)
+    {
+        string message = "";
+        var qCheckUser = "SELECT COUNT(*) FROM users WHERE username = $1 AND password = $2;";
+        var checkUserCmd = _db.CreateCommand(qCheckUser);
+        checkUserCmd.Parameters.AddWithValue(parts[0]);
+        checkUserCmd.Parameters.AddWithValue(parts[1]);
+        var userCount = (long)checkUserCmd.ExecuteScalar();
+
+        if (userCount == 0)
+        {
+            message = "User doesn't exist";
+            return message;
+        }
+
         return message;
     }
 }

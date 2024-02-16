@@ -13,6 +13,10 @@ public class UserAction
 
     public string HideMe(string path, string[] parts, HttpListenerResponse response, RequestHandler handler)
     {
+        if (!UserExists(parts))
+        {
+            return "User doesnt exist";
+        }
         string message = "";
         string newIP = handler.Generate().ToString();
         try
@@ -95,6 +99,11 @@ public class UserAction
     }
     public string IPScanner(string path, string[] parts, HttpListenerResponse response)
     {
+        if (!UserExists(parts))
+        {
+            return "User doesnt exist";
+        }
+
         string message = "";
         var qIPScanner = "SELECT address FROM ip ORDER BY RANDOM() LIMIT 3;";
         var qEditUserStats = @"
@@ -196,6 +205,11 @@ public class UserAction
     }
     public string Heal(HttpListenerRequest request, string path, string[] parts, HttpListenerResponse response)
     {
+        if (!UserExists(parts))
+        {
+            return "User doesnt exist";
+        }
+
         const string qCheckPassword = "SELECT id FROM users WHERE username = $1 AND password = $2";
 
         string message = "";
@@ -251,6 +265,11 @@ public class UserAction
     }
     public string Attack(string path, string[] parts, HttpListenerResponse response)
     {
+        if (!UserExists(parts))
+        {
+            return "User doesnt exist";
+        }
+
         string message = "";
 
         const string qCheckPassword = "SELECT id from users WHERE username = $1 and password=$2";
@@ -283,7 +302,7 @@ public class UserAction
             {
                 message = "Error: Invalid path, please include a target IP.";
             }
-            
+
             //Check Detection level
             var cmdReadDetection = _db.CreateCommand(qReadDetection);
             cmdReadDetection.Parameters.AddWithValue(username);
@@ -318,7 +337,7 @@ public class UserAction
 
             while (firewallReader.Read())
             {
-                if (firewallReader.GetInt32(0) <=0)
+                if (firewallReader.GetInt32(0) <= 0)
                 {
                     message = "Target's firewall is already at 0.";
                     return message;
@@ -334,7 +353,6 @@ public class UserAction
                 {
                     if (readerGetId.Read())
                     {
-                        
                         //Update & read firewall
                         userId = readerGetId.GetInt32(0);
                         using (var cmdUpdateFirewall = _db.CreateCommand(qUpdateFirewall))
@@ -474,6 +492,11 @@ public class UserAction
     }
     public string ShowStats(string path, string[] parts, HttpListenerResponse response)
     {
+        if (!UserExists(parts))
+        {
+            return "User doesnt exist";
+        }
+
         string message = "";
         string userStats = @"
         SELECT u.username, u.hackercoinz, u.detection, u.firewallhealth, i.address
@@ -498,5 +521,20 @@ public class UserAction
             message = "No user found with the provided username and password.";
         }
         return message;
+    }
+    public bool UserExists(string[] parts)
+    {
+        var qCheckUser = "SELECT COUNT(*) FROM users WHERE username = $1 AND password = $2;";
+        var checkUserCmd = _db.CreateCommand(qCheckUser);
+        checkUserCmd.Parameters.AddWithValue(parts[0]);
+        checkUserCmd.Parameters.AddWithValue(parts[1]);
+        var userCount = (long)checkUserCmd.ExecuteScalar();
+
+        if (userCount == 0)
+        {
+            return false;
+        }
+
+        return true;
     }
 }

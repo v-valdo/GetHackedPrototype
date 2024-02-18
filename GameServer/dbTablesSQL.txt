@@ -4,7 +4,8 @@ username TEXT NOT NULL,
 password TEXT NOT NULL,
 firewallHealth INT NOT NULL DEFAULT '100',
 detection INT DEFAULT '0',
-hackercoinz INT DEFAULT '50'
+hackercoinz INT DEFAULT '50', 
+unique (username)
 );
 ALTER TABLE users
 ADD PRIMARY KEY(id);

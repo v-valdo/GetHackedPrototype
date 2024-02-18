@@ -92,8 +92,8 @@ public class UserAction
         }
         catch (Exception e)
         {
-            Console.WriteLine($"Unexpected error: {e.Message}");
-            message = $"Unexpected error: {e.Message}";
+            Console.WriteLine($"HIDE ME ERROR: {e.Message}");
+            message = $"HIDE ME ERROR: {e.Message}";
         }
         return message;
     }
@@ -150,7 +150,7 @@ public class UserAction
         }
         catch (Exception e)
         {
-            Console.WriteLine(e.Message);
+            Console.WriteLine("IPScanner ERROR: " + e.Message);
         }
         return message;
     }
@@ -198,7 +198,7 @@ public class UserAction
 
         catch (Exception ex)
         {
-            Console.WriteLine($"Unexpected error: {ex.Message}");
+            Console.WriteLine($"Registration ERROR: {ex.Message}");
             message += ex.Message;
         }
         return message;
@@ -235,7 +235,7 @@ public class UserAction
         }
         catch (Exception ex)
         {
-            message = "An error occurred: " + ex.Message;
+            message = "HEAL ERROR: " + ex.Message;
         }
         return message;
     }
@@ -463,12 +463,13 @@ public class UserAction
         }
         catch (Exception e)
         {
-            Console.WriteLine($"Unexpected error: {e.Message}");
+            Console.WriteLine($"ATTACK ERROR: {e.Message}");
         }
         return message;
     }
     public string ShowStats(string[] parts)
     {
+
         if (!UserExists(parts))
         {
             return "User doesnt exist";
@@ -481,59 +482,81 @@ public class UserAction
         JOIN ip i ON u.id = i.user_id
         WHERE u.username = $1 AND u.password = $2;";
 
-        using var cmd = _db.CreateCommand(userStats);
-        cmd.Parameters.AddWithValue(parts[0]);
-        cmd.Parameters.AddWithValue(parts[1]);
-        using var reader = cmd.ExecuteReader();
+        try
+        {
+            using var cmd = _db.CreateCommand(userStats);
+            cmd.Parameters.AddWithValue(parts[0]);
+            cmd.Parameters.AddWithValue(parts[1]);
+            using var reader = cmd.ExecuteReader();
 
-        if (reader.Read())
-        {
-            do
+            if (reader.Read())
             {
-                message += $"Username: {reader.GetString(0)}, Hackercoinz: {reader.GetInt32(1)}, Detection Rate: {reader.GetInt32(2)}, Firewall Health: {reader.GetInt32(3)}, IP Address: {reader.GetString(4)}\n";
-            } while (reader.Read());
+                do
+                {
+                    message += $"Username: {reader.GetString(0)}, Hackercoinz: {reader.GetInt32(1)}, Detection Rate: {reader.GetInt32(2)}, Firewall Health: {reader.GetInt32(3)}, IP Address: {reader.GetString(4)}\n";
+                } while (reader.Read());
+            }
+            else
+            {
+                message = "No user found with the provided username and password.";
+            }
+            return message;
         }
-        else
+        catch (Exception e)
         {
-            message = "No user found with the provided username and password.";
+            Console.WriteLine("Show Stats ERROR: " + e.Message);
         }
         return message;
     }
     public bool UserExists(string[] parts)
     {
         var qCheckUser = "SELECT COUNT(*) FROM users WHERE username = $1 AND password = $2;";
-        var checkUserCmd = _db.CreateCommand(qCheckUser);
-        checkUserCmd.Parameters.AddWithValue(parts[0]);
-        checkUserCmd.Parameters.AddWithValue(parts[1]);
-        var userCount = (long)checkUserCmd.ExecuteScalar();
-
-        if (userCount == 0)
+        try
         {
-            return false;
-        }
 
+            var checkUserCmd = _db.CreateCommand(qCheckUser);
+            checkUserCmd.Parameters.AddWithValue(parts[0]);
+            checkUserCmd.Parameters.AddWithValue(parts[1]);
+            var userCount = (long)checkUserCmd.ExecuteScalar();
+
+            if (userCount == 0)
+            {
+                return false;
+            }
+
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine("UserExists ERROR: " + e.Message);
+        }
         return true;
     }
-
     public int GetUserId(string[] parts)
     {
         const string qCheckUserPass = "SELECT id FROM users WHERE username = $1 AND password = $2";
         int userId = 0;
-
-        using (var cmdCheckPassword = _db.CreateCommand(qCheckUserPass))
+        try
         {
-            cmdCheckPassword.Parameters.AddWithValue(parts[0]);
-            cmdCheckPassword.Parameters.AddWithValue(parts[1]);
 
-            using (var readerGetId = cmdCheckPassword.ExecuteReader())
+            using (var cmdCheckPassword = _db.CreateCommand(qCheckUserPass))
             {
-                if (readerGetId.Read())
+                cmdCheckPassword.Parameters.AddWithValue(parts[0]);
+                cmdCheckPassword.Parameters.AddWithValue(parts[1]);
+
+                using (var readerGetId = cmdCheckPassword.ExecuteReader())
                 {
-                    userId = readerGetId.GetInt32(0);
+                    if (readerGetId.Read())
+                    {
+                        userId = readerGetId.GetInt32(0);
+                    }
                 }
             }
+            return userId;
         }
-
+        catch (Exception e)
+        {
+            Console.WriteLine("GetUsedID " + e.Message);
+        }
         return userId;
     }
 

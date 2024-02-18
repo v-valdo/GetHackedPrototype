@@ -305,13 +305,13 @@ public class UserAction
             var detectionReader = cmdReadDetection.ExecuteReader();
 
             while (detectionReader.Read())
+            {
+                if (detectionReader.GetInt32(0) > 80)
                 {
-                    if (detectionReader.GetInt32(0) > 80)
-                    {
-                        message = "\nDetection level too high to place an attack!!";
-                        return message;
-                    }
+                    message = "\nDetection level too high to place an attack!!";
+                    return message;
                 }
+            }
 
             //Update & read firewall
             using (var cmdUpdateFirewall = _db.CreateCommand(qUpdateFirewall))

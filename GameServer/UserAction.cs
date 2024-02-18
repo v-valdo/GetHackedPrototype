@@ -559,4 +559,37 @@ public class UserAction
         }
         return userId;
     }
+    public string SendToJail(string[] parts)
+    {
+        if (!UserExists(parts))
+        {
+            return "User doesn't exist";
+        }
+
+        const string qActivateJail = @"
+                update users 
+                set isinjail = true 
+                where username = $1 
+                and password = $2;
+                select pg_sleep(60);
+                update users 
+                set isinjail = false 
+                where username = $1 
+                and password = $2";
+
+        try
+        {
+            using var cmd = _db.CreateCommand(qActivateJail);
+            cmd.Parameters.AddWithValue(parts[0]);
+            cmd.Parameters.AddWithValue(parts[1]);
+            cmd.ExecuteNonQuery();
+
+            return $"{parts[0]} sent to jail";
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine("SEND TO JAIL ERROR: " + e.Message);
+        }
+        return $"Couldn't send {parts[0]} to jail";
+    }
 }

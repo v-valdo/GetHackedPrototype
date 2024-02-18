@@ -57,29 +57,29 @@ public class RequestHandler
         if (_police.IsInJail(parts))
         {
             message = "You're in jail! Your stats are: \n" + _user.ShowStats(parts);
-            Print(response, message);
+            PrintAndLoopback(response, message);
             return;
         }
 
         if (_police.DetectionRate(parts) > 99)
         {
-            Print(response, _police.SendToJail(parts));
+            PrintAndLoopback(response, _police.SendToJail(parts));
             return;
         }
 
         if (path.Contains("ipscanner.exe"))
         {
             message = _user.IPScanner(parts);
-            Print(response, message);
+            PrintAndLoopback(response, message);
         }
 
         if (path.Contains("statuscenter.exe"))
         {
             message = _user.ShowStats(parts);
-            Print(response, message);
+            PrintAndLoopback(response, message);
         }
 
-        Print(response, "Invalid endpoint");
+        PrintAndLoopback(response, "Invalid endpoint");
     }
     private void Post(HttpListenerResponse response, HttpListenerRequest request)
     {
@@ -89,13 +89,13 @@ public class RequestHandler
         if (_police.IsInJail(parts))
         {
             message = "You're in jail! Your stats are: \n" + _user.ShowStats(parts);
-            Print(response, message);
+            PrintAndLoopback(response, message);
             return;
         }
 
         if (_police.DetectionRate(parts) > 99)
         {
-            Print(response, _police.SendToJail(parts));
+            PrintAndLoopback(response, _police.SendToJail(parts));
             return;
         }
 
@@ -104,10 +104,10 @@ public class RequestHandler
         if (path.Contains("newuser"))
         {
             message = _user.Register(parts, this);
-            Print(response, message);
+            PrintAndLoopback(response, message);
         }
 
-        Print(response, "Invalid endpoint");
+        PrintAndLoopback(response, "Invalid endpoint");
     }
     private void Put(HttpListenerResponse response, HttpListenerRequest request)
     {
@@ -117,33 +117,33 @@ public class RequestHandler
         if (_police.IsInJail(parts))
         {
             message = "You're in jail! Your stats are: \n" + _user.ShowStats(parts);
-            Print(response, message);
+            PrintAndLoopback(response, message);
             return;
         }
 
         if (_police.DetectionRate(parts) > 99)
         {
-            Print(response, _police.SendToJail(parts));
+            PrintAndLoopback(response, _police.SendToJail(parts));
             return;
         }
 
         if (path.Contains("attack")) //Attack! curl -X PUT http://localhost:3000/attack/targetIP -d 'username,password'
         {
             message = _user.Attack(path, parts);
-            Print(response, message);
+            PrintAndLoopback(response, message);
         }
 
         if (path.Contains("hide-me.exe"))
         {
             message = _user.HideMe(parts, this);
-            Print(response, message);
+            PrintAndLoopback(response, message);
         }
         if (path.Contains("updatefirewall.exe"))
         {
             message = _user.Heal(parts);
-            Print(response, message);
+            PrintAndLoopback(response, message);
         }
-        Print(response, "Invalid endpoint");
+        PrintAndLoopback(response, "Invalid endpoint");
     }
     public IPAddress Generate()
     {
@@ -171,7 +171,7 @@ public class RequestHandler
             cmd.ExecuteNonQuery();
         }
     }
-    private void Print(HttpListenerResponse response, string message)
+    private void PrintAndLoopback(HttpListenerResponse response, string message)
     {
         byte[] buffer = Encoding.UTF8.GetBytes(message);
         response.ContentType = "text/plain";

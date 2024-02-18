@@ -1,4 +1,4 @@
-﻿namespace GameServer;
+namespace GameServer;
 
 using GetHackedPrototype;
 using Npgsql;
@@ -11,7 +11,7 @@ public class UserAction
         _db = db;
     }
 
-    public string HideMe(string path, string[] parts, HttpListenerResponse response, RequestHandler handler)
+    public string HideMe(string[] parts, RequestHandler handler)
     {
         if (!UserExists(parts))
         {
@@ -92,12 +92,12 @@ public class UserAction
         }
         catch (Exception e)
         {
-            Console.WriteLine($"Unexpected error: {e.Message}");
-            message = $"Unexpected error: {e.Message}";
+            Console.WriteLine($"HIDE ME ERROR: {e.Message}");
+            message = $"HIDE ME ERROR: {e.Message}";
         }
         return message;
     }
-    public string IPScanner(string path, string[] parts, HttpListenerResponse response)
+    public string IPScanner(string[] parts)
     {
         if (!UserExists(parts))
         {
@@ -150,11 +150,11 @@ public class UserAction
         }
         catch (Exception e)
         {
-            Console.WriteLine(e.Message);
+            Console.WriteLine("IPScanner ERROR: " + e.Message);
         }
         return message;
     }
-    public string Register(string path, string[] parts, HttpListenerResponse response, RequestHandler handler)
+    public string Register(string[] parts, RequestHandler handler)
     {
         string message = "";
 
@@ -198,12 +198,12 @@ public class UserAction
 
         catch (Exception ex)
         {
-            Console.WriteLine($"Unexpected error: {ex.Message}");
+            Console.WriteLine($"Registration ERROR: {ex.Message}");
             message += ex.Message;
         }
         return message;
     }
-    public string Heal(HttpListenerRequest request, string path, string[] parts, HttpListenerResponse response)
+    public string Heal(string[] parts)
     {
         if (!UserExists(parts))
         {
@@ -211,45 +211,35 @@ public class UserAction
         }
 
         const string qCheckPassword = "SELECT id FROM users WHERE username = $1 AND password = $2";
-
         string message = "";
         string username = parts[0];
         string password = parts[1];
-
-        if (path.Contains("/heal"))
+        try
         {
-            try
-            {
-                //Get user id
-                int id = GetUserId(parts);
+            //Get user id
+            int id = GetUserId(parts);
 
-                const string qUpdateFirewall = "UPDATE users SET firewallhealth = 100 WHERE id = $1";
-                const string qUpdateCoins = "UPDATE users SET hackercoinz = hackercoinz - 10 WHERE id = $1";
+            const string qUpdateFirewall = "UPDATE users SET firewallhealth = 100 WHERE id = $1";
+            const string qUpdateCoins = "UPDATE users SET hackercoinz = hackercoinz - 10 WHERE id = $1";
 
-                var cmdUpdateFirewall = _db.CreateCommand(qUpdateFirewall);
-                var cmdUpdateCoins = _db.CreateCommand(qUpdateCoins);
+            var cmdUpdateFirewall = _db.CreateCommand(qUpdateFirewall);
+            var cmdUpdateCoins = _db.CreateCommand(qUpdateCoins);
 
-                cmdUpdateFirewall.Parameters.AddWithValue(id);
-                cmdUpdateCoins.Parameters.AddWithValue(id);
+            cmdUpdateFirewall.Parameters.AddWithValue(id);
+            cmdUpdateCoins.Parameters.AddWithValue(id);
 
-                cmdUpdateFirewall.ExecuteNonQuery();
-                cmdUpdateCoins.ExecuteNonQuery();
-                message = "User healed successfully.";
+            cmdUpdateFirewall.ExecuteNonQuery();
+            cmdUpdateCoins.ExecuteNonQuery();
+            message = "User healed successfully.";
 
-            }
-            catch (Exception ex)
-            {
-                message = "An error occurred: " + ex.Message;
-            }
         }
-        else
+        catch (Exception ex)
         {
-            message = "Invalid path.";
+            message = "HEAL ERROR: " + ex.Message;
         }
-
         return message;
     }
-    public string Attack(string path, string[] parts, HttpListenerResponse response)
+    public string Attack(string path, string[] parts)
     {
         if (!UserExists(parts))
         {
@@ -457,12 +447,13 @@ public class UserAction
 
         catch (Exception e)
         {
-            Console.WriteLine($"Unexpected error: {e.Message}");
+            Console.WriteLine($"ATTACK ERROR: {e.Message}");
         }
         return message;
     }
-    public string ShowStats(string path, string[] parts, HttpListenerResponse response)
+    public string ShowStats(string[] parts)
     {
+
         if (!UserExists(parts))
         {
             return "User does not exist";
@@ -475,60 +466,114 @@ public class UserAction
         JOIN ip i ON u.id = i.user_id
         WHERE u.username = $1 AND u.password = $2;";
 
-        using var cmd = _db.CreateCommand(userStats);
-        cmd.Parameters.AddWithValue(parts[0]);
-        cmd.Parameters.AddWithValue(parts[1]);
-        using var reader = cmd.ExecuteReader();
+        try
+        {
+            using var cmd = _db.CreateCommand(userStats);
+            cmd.Parameters.AddWithValue(parts[0]);
+            cmd.Parameters.AddWithValue(parts[1]);
+            using var reader = cmd.ExecuteReader();
 
-        if (reader.Read())
-        {
-            do
+            if (reader.Read())
             {
-                message += $"Username: {reader.GetString(0)}, Hackercoinz: {reader.GetInt32(1)}, Detection Rate: {reader.GetInt32(2)}, Firewall Health: {reader.GetInt32(3)}, IP Address: {reader.GetString(4)}\n";
-            } while (reader.Read());
+                do
+                {
+                    message += $"Username: {reader.GetString(0)}, Hackercoinz: {reader.GetInt32(1)}, Detection Rate: {reader.GetInt32(2)}, Firewall Health: {reader.GetInt32(3)}, IP Address: {reader.GetString(4)}\n";
+                } while (reader.Read());
+            }
+            else
+            {
+                message = "No user found with the provided username and password.";
+            }
+            return message;
         }
-        else
+        catch (Exception e)
         {
-            message = "No user found with the provided username and password.";
+            Console.WriteLine("Show Stats ERROR: " + e.Message);
         }
         return message;
     }
     public bool UserExists(string[] parts)
     {
         var qCheckUser = "SELECT COUNT(*) FROM users WHERE username = $1 AND password = $2;";
-        var checkUserCmd = _db.CreateCommand(qCheckUser);
-        checkUserCmd.Parameters.AddWithValue(parts[0]);
-        checkUserCmd.Parameters.AddWithValue(parts[1]);
-        var userCount = (long)checkUserCmd.ExecuteScalar();
-
-        if (userCount == 0)
+        try
         {
-            return false;
-        }
 
+            var checkUserCmd = _db.CreateCommand(qCheckUser);
+            checkUserCmd.Parameters.AddWithValue(parts[0]);
+            checkUserCmd.Parameters.AddWithValue(parts[1]);
+            var userCount = (long)checkUserCmd.ExecuteScalar();
+
+            if (userCount == 0)
+            {
+                return false;
+            }
+
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine("UserExists ERROR: " + e.Message);
+        }
         return true;
     }
-
     public int GetUserId(string[] parts)
     {
         const string qCheckUserPass = "SELECT id FROM users WHERE username = $1 AND password = $2";
         int userId = 0;
-
-        using (var cmdCheckPassword = _db.CreateCommand(qCheckUserPass))
+        try
         {
-            cmdCheckPassword.Parameters.AddWithValue(parts[0]);
-            cmdCheckPassword.Parameters.AddWithValue(parts[1]);
 
-            using (var readerGetId = cmdCheckPassword.ExecuteReader())
+            using (var cmdCheckPassword = _db.CreateCommand(qCheckUserPass))
             {
-                if (readerGetId.Read())
+                cmdCheckPassword.Parameters.AddWithValue(parts[0]);
+                cmdCheckPassword.Parameters.AddWithValue(parts[1]);
+
+                using (var readerGetId = cmdCheckPassword.ExecuteReader())
                 {
-                    userId = readerGetId.GetInt32(0);
+                    if (readerGetId.Read())
+                    {
+                        userId = readerGetId.GetInt32(0);
+                    }
                 }
             }
+            return userId;
         }
-
+        catch (Exception e)
+        {
+            Console.WriteLine("GetUsedID " + e.Message);
+        }
         return userId;
     }
+    public string SendToJail(string[] parts)
+    {
+        if (!UserExists(parts))
+        {
+            return "User doesn't exist";
+        }
 
+        const string qActivateJail = @"
+                update users 
+                set isinjail = true 
+                where username = $1 
+                and password = $2;
+                select pg_sleep(60);
+                update users 
+                set isinjail = false 
+                where username = $1 
+                and password = $2";
+
+        try
+        {
+            using var cmd = _db.CreateCommand(qActivateJail);
+            cmd.Parameters.AddWithValue(parts[0]);
+            cmd.Parameters.AddWithValue(parts[1]);
+            cmd.ExecuteNonQuery();
+
+            return $"{parts[0]} sent to jail";
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine("SEND TO JAIL ERROR: " + e.Message);
+        }
+        return $"Couldn't send {parts[0]} to jail";
+    }
 }

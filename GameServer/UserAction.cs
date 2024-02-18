@@ -559,5 +559,4 @@ public class UserAction
         }
         return userId;
     }
-
 }

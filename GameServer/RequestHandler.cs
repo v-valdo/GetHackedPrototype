@@ -55,13 +55,13 @@ public class RequestHandler
 
         if (path.Contains("ipscanner.exe"))
         {
-            message = _action.IPScanner(path, parts, response);
+            message = _action.IPScanner(parts);
             Print(response, message);
         }
 
         if (path.Contains("statuscenter.exe"))
         {
-            message = _action.ShowStats(path, parts, response);
+            message = _action.ShowStats(parts);
             Print(response, message);
         }
     }
@@ -73,7 +73,7 @@ public class RequestHandler
         // Register User: curl -X POST http://localhost:3000/newuser -d 'username,password,dummy_password,keyword'
         if (path.Contains("newuser"))
         {
-            message = _action.Register(path, parts, response, this);
+            message = _action.Register(parts, this);
             Print(response, message);
         }
     }
@@ -84,18 +84,18 @@ public class RequestHandler
 
         if (path.Contains("attack")) //Attack! curl -X PUT http://localhost:3000/attack/targetIP -d 'username,password'
         {
-            message = _action.Attack(path, parts, response);
+            message = _action.Attack(path, parts);
             Print(response, message);
         }
 
         if (path.Contains("hide-me.exe"))
         {
-            message = _action.HideMe(path, parts, response, this);
+            message = _action.HideMe(parts, this);
             Print(response, message);
         }
         if (path.Contains("heal"))
         {
-            message = _action.Heal(request, path, parts, response);
+            message = _action.Heal(parts);
             Print(response, message);
         }
     }

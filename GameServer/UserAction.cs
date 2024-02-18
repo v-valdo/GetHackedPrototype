@@ -11,7 +11,7 @@ public class UserAction
         _db = db;
     }
 
-    public string HideMe(string path, string[] parts, HttpListenerResponse response, RequestHandler handler)
+    public string HideMe(string[] parts, RequestHandler handler)
     {
         if (!UserExists(parts))
         {
@@ -97,7 +97,7 @@ public class UserAction
         }
         return message;
     }
-    public string IPScanner(string path, string[] parts, HttpListenerResponse response)
+    public string IPScanner(string[] parts)
     {
         if (!UserExists(parts))
         {
@@ -154,7 +154,7 @@ public class UserAction
         }
         return message;
     }
-    public string Register(string path, string[] parts, HttpListenerResponse response, RequestHandler handler)
+    public string Register(string[] parts, RequestHandler handler)
     {
         string message = "";
 
@@ -203,7 +203,7 @@ public class UserAction
         }
         return message;
     }
-    public string Heal(HttpListenerRequest request, string path, string[] parts, HttpListenerResponse response)
+    public string Heal(string[] parts)
     {
         if (!UserExists(parts))
         {
@@ -211,45 +211,35 @@ public class UserAction
         }
 
         const string qCheckPassword = "SELECT id FROM users WHERE username = $1 AND password = $2";
-
         string message = "";
         string username = parts[0];
         string password = parts[1];
-
-        if (path.Contains("/heal"))
+        try
         {
-            try
-            {
-                //Get user id
-                int id = GetUserId(parts);
+            //Get user id
+            int id = GetUserId(parts);
 
-                const string qUpdateFirewall = "UPDATE users SET firewallhealth = 100 WHERE id = $1";
-                const string qUpdateCoins = "UPDATE users SET hackercoinz = hackercoinz - 10 WHERE id = $1";
+            const string qUpdateFirewall = "UPDATE users SET firewallhealth = 100 WHERE id = $1";
+            const string qUpdateCoins = "UPDATE users SET hackercoinz = hackercoinz - 10 WHERE id = $1";
 
-                var cmdUpdateFirewall = _db.CreateCommand(qUpdateFirewall);
-                var cmdUpdateCoins = _db.CreateCommand(qUpdateCoins);
+            var cmdUpdateFirewall = _db.CreateCommand(qUpdateFirewall);
+            var cmdUpdateCoins = _db.CreateCommand(qUpdateCoins);
 
-                cmdUpdateFirewall.Parameters.AddWithValue(id);
-                cmdUpdateCoins.Parameters.AddWithValue(id);
+            cmdUpdateFirewall.Parameters.AddWithValue(id);
+            cmdUpdateCoins.Parameters.AddWithValue(id);
 
-                cmdUpdateFirewall.ExecuteNonQuery();
-                cmdUpdateCoins.ExecuteNonQuery();
-                message = "User healed successfully.";
+            cmdUpdateFirewall.ExecuteNonQuery();
+            cmdUpdateCoins.ExecuteNonQuery();
+            message = "User healed successfully.";
 
-            }
-            catch (Exception ex)
-            {
-                message = "An error occurred: " + ex.Message;
-            }
         }
-        else
+        catch (Exception ex)
         {
-            message = "Invalid path.";
+            message = "An error occurred: " + ex.Message;
         }
-
         return message;
     }
-    public string Attack(string path, string[] parts, HttpListenerResponse response)
+    public string Attack(string path, string[] parts)
     {
         if (!UserExists(parts))
         {
@@ -303,7 +293,7 @@ public class UserAction
             {
                 //Get user id
                 int userId = GetUserId(parts);
-                
+
                 //Get target id
                 using (var cmdSelectTargetId = _db.CreateCommand(qSelectTargetId))
                 {
@@ -477,7 +467,7 @@ public class UserAction
         }
         return message;
     }
-    public string ShowStats(string path, string[] parts, HttpListenerResponse response)
+    public string ShowStats(string[] parts)
     {
         if (!UserExists(parts))
         {

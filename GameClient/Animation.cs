@@ -28,11 +28,12 @@ public class Animation
     public static void Title()
     {
         string titlePath = "../../../ASCII/Title.txt";
+
         if (!File.Exists(titlePath))
         {
-            titlePath = "../../ASCII/Title.txt";
+            titlePath = "ASCII/Title.txt";
         }
-        string[] title = File.ReadAllLines("../../../ASCII/Title.txt");
+        string[] title = File.ReadAllLines(titlePath);
         foreach (var line in title)
         {
             Console.WriteLine(line);

@@ -11,5 +11,5 @@ Console.WriteLine();
 
 // POST REQUEST (curl -d "username=hej&password=hej" POST localhost:3000)
 // MAIN MENU
-
-await User.WelcomeMenu();
+User loggedOutUser = new();
+await loggedOutUser.WelcomeMenu();

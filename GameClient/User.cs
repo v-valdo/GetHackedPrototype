@@ -7,7 +7,7 @@ public class User
     public string? Username;
     public string? Password;
 
-    public User()
+    static User()
     {
         _client.BaseAddress = _baseUri;
     }
@@ -56,7 +56,7 @@ public class User
         user.Password = Console.ReadLine();
         return user;
     }
-    public static async Task WelcomeMenu()
+    public async Task WelcomeMenu()
     {
         while (true)
         {
@@ -119,6 +119,7 @@ public class User
                     Help();
                     break;
                 case "run injector":
+                    Console.Clear();
                     var (injectIP, password) = Prompts.InjectorPrompt();
                     await software.Inject(_client, user, injectIP, password);
                     break;
@@ -126,9 +127,11 @@ public class User
                     Console.Clear();
                     break;
                 case "run ipscanner":
+                    Console.Clear();
                     await software.IPScanner(_client, _baseUri, user);
                     break;
                 case "run hideme":
+                    Console.Clear();
                     await software.HideMe(_client, user);
                     break;
                 case "run statuscenter":
@@ -137,6 +140,16 @@ public class User
                 case "run wallbreaker":
                     string breakIP = Prompts.AttackPrompt();
                     await software.Attack(_client, user, breakIP);
+                    break;
+                case "firewallpatcher":
+                    await software.Heal(_client, user);
+                    break;
+                case "logout":
+                    Console.Clear();
+                    await WelcomeMenu();
+                    break;
+                default:
+                    Console.WriteLine("Command not found");
                     break;
             }
         }

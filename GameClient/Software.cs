@@ -10,7 +10,7 @@ public class Software
     {
 
     }
-    public static async Task Register(HttpClient client, Uri uri, string data)
+    public async Task Register(HttpClient client, Uri uri, string data)
     {
         using StringContent textContent = new StringContent(data, Encoding.UTF8, "text/plain");
         try
@@ -25,7 +25,7 @@ public class Software
             throw;
         }
     }
-    public static async Task IPScanner(HttpClient client, Uri uri, User user)
+    public async Task IPScanner(HttpClient client, Uri uri, User user)
     {
         using StringContent textContent = new StringContent($"{user.Username},{user.Password}", Encoding.UTF8, "text/plain");
         Software IPScanner = new();
@@ -52,7 +52,7 @@ public class Software
             Console.WriteLine(e.Message);
         }
     }
-    public static async Task StatusCenter(HttpClient client, Uri uri, User user)
+    public async Task StatusCenter(HttpClient client, Uri uri, User user)
     {
         using StringContent textContent = new StringContent($"{user.Username},{user.Password}", Encoding.UTF8, "text/plain");
         Software StatusCenter = new();
@@ -79,7 +79,7 @@ public class Software
             Console.WriteLine(e.Message);
         }
     }
-    public static async Task Attack(HttpClient client, Uri uri, User user, string ip)
+    public async Task Attack(HttpClient client, User user, string ip)
     {
         using StringContent textContent = new StringContent($"{user.Username},{user.Password}", Encoding.UTF8, "text/plain");
 
@@ -92,7 +92,51 @@ public class Software
         catch (Exception e)
         {
             Console.WriteLine(e.Message);
-            throw;
+        }
+    }
+    public async Task HideMe(HttpClient client, User user)
+    {
+        using StringContent textContent = new StringContent($"{user.Username},{user.Password}", Encoding.UTF8, "text/plain");
+
+        try
+        {
+            using HttpResponseMessage response = await client.PutAsync(client.BaseAddress + $"hideme.exe", textContent);
+            var jsonResponse = await response.Content.ReadAsStringAsync();
+            Console.WriteLine($"{jsonResponse}\n");
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e.Message);
+        }
+    }
+    public async Task Heal(HttpClient client, User user)
+    {
+        using StringContent textContent = new StringContent($"{user.Username},{user.Password}", Encoding.UTF8, "text/plain");
+
+        try
+        {
+            using HttpResponseMessage response = await client.PutAsync(client.BaseAddress + $"updatefirewall.exe", textContent);
+            var jsonResponse = await response.Content.ReadAsStringAsync();
+            Console.WriteLine($"{jsonResponse}\n");
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e.Message);
+        }
+    }
+    public async Task Inject(HttpClient client, User user, string ip, string dummyPassword)
+    {
+        using StringContent textContent = new StringContent($"{user.Username},{user.Password}", Encoding.UTF8, "text/plain");
+
+        try
+        {
+            using HttpResponseMessage response = await client.PutAsync(client.BaseAddress + $"injector.exe/{dummyPassword}/{ip}", textContent);
+            var jsonResponse = await response.Content.ReadAsStringAsync();
+            Console.WriteLine($"{jsonResponse}\n");
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e.Message);
         }
     }
 }

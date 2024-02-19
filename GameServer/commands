@@ -11,7 +11,7 @@ GET localhost:3000/ipscanner.exe -d 'username,password,keyword'
 -X GET localhost:3000/statuscenter.exe -d 'username,password'
 
 --- Reset IP ---
--X PUT localhost:3000/hide-me.exe -d 'username,password'
+-X PUT localhost:3000/hideme.exe -d 'username,password'
 
 --- Heal ---
 X- PUT localhost:3000/updatefirewall.exe -d 'username,password'

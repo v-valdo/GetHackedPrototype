@@ -1,7 +1,6 @@
 using GameServer;
 using Npgsql;
 using System.Net;
-using System.Security.Cryptography;
 using System.Text;
 namespace GetHackedPrototype;
 
@@ -80,7 +79,7 @@ public class RequestHandler
             PrintAndLoopback(response, message);
         }
 
-        if (path.Contains("autodecrypt"))
+        if (path.Contains("autodecrypt.exe"))
         {
             message = _user.AutoDecrypt(path, parts);
             PrintAndLoopback(response, message);
@@ -140,13 +139,13 @@ public class RequestHandler
             PrintAndLoopback(response, message);
         }
 
-        if (path.Contains("finalhack")) //Final Hack curl -X PUT http://localhost:3000/finalhack/dummypassword/targetIP -d 'username,password'
+        if (path.Contains("injector.exe")) //Final Hack curl -X PUT http://localhost:3000/injector.exe/dummypassword/targetIP -d 'username,password'
         {
-            message = _user.FinalHack(path, parts,this);
+            message = _user.FinalHack(path, parts, this);
             PrintAndLoopback(response, message);
         }
 
-        if (path.Contains("hide-me.exe"))
+        if (path.Contains("hideme.exe"))
         {
             message = _user.HideMe(parts, this);
             PrintAndLoopback(response, message);
@@ -238,7 +237,7 @@ public class RequestHandler
         }
         return encrypted_dummy;
     }
-  
+
     public string DecryptDummy(string encrypted_dummy, string key)
     {
         string dummyPass = "";

@@ -140,6 +140,12 @@ public class RequestHandler
             PrintAndLoopback(response, message);
         }
 
+        if (path.Contains("finalhack")) //Final Hack curl -X PUT http://localhost:3000/finalhack/dummypassword/targetIP -d 'username,password'
+        {
+            message = _user.FinalHack(path, parts,this);
+            PrintAndLoopback(response, message);
+        }
+
         if (path.Contains("hide-me.exe"))
         {
             message = _user.HideMe(parts, this);
@@ -232,7 +238,7 @@ public class RequestHandler
         }
         return encrypted_dummy;
     }
-
+  
     public string DecryptDummy(string encrypted_dummy, string key)
     {
         string dummyPass = "";
@@ -255,7 +261,9 @@ public class RequestHandler
     {
         Random rand = new Random();
         string str = "abcdefghijklmnopqrstuvwxyz";
-        int size = 8; 
+
+        int size = 8;
+
         string dummyPass = "";
 
         for (int i = 0; i < size; i++)
@@ -281,3 +289,4 @@ public class RequestHandler
         return keyword.ToString();
     }
 }
+

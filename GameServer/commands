@@ -10,8 +10,7 @@ GET localhost:3000/ipscanner.exe -d 'username,password,keyword'
 ShowStats:
 -X GET localhost:3000/statuscenter.exe -d 'username,password'
 
---- Attack ---
--X PUT localhost:3000/attack/<ip> -d 'username,password'
+Register User: curl -X POST http://localhost:3000/newuser -d 'username,password,keyword'
 
 --- Reset IP ---
 -X PUT localhost:3000/hide-me.exe -d 'username,password'

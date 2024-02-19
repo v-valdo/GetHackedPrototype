@@ -159,9 +159,9 @@ public class UserAction
         string message = "";
 
         string qRegister = "INSERT INTO users(username,password) VALUES ($1, $2) RETURNING id";
-        string qAddDummy = "INSERT INTO dummy_password(user_id,dummy_pass,keyword) VALUES ($1, $2, $3)";
+        string qAddDummy = "INSERT INTO dummy_password(user_id,dummy_pass,keyword,encrypted_dummyP) VALUES ($1, $2, $3, $4";
         string qAddIp = "INSERT INTO ip(address,user_id) VALUES ($1, $2)";
-
+       
         try
         {
             if (parts[3].Length != 6)
@@ -177,10 +177,17 @@ public class UserAction
             int userId = (int)cmd.ExecuteScalar();
 
             //INSERT into dummy_password table
+
+            string key = handler.GenerateKey(parts[2], parts[3]);
+            string encrypted_dummy = handler.EncryptDummy(parts[2], key);
+            string dummyPass = handler.GenerateDummyPass();
+
             using var cmd2 = _db.CreateCommand(qAddDummy);
             cmd2.Parameters.AddWithValue(userId); //user id
-            cmd2.Parameters.AddWithValue(parts[2]); //dummy password
+            cmd2.Parameters.AddWithValue(dummyPass); //dummy password
             cmd2.Parameters.AddWithValue(parts[3]); //keyword
+            cmd2.Parameters.AddWithValue(encrypted_dummy); // encrypted Dummy
+
             cmd2.ExecuteNonQuery();
 
             //INSERT into ip table
@@ -194,6 +201,7 @@ public class UserAction
             handler.GeneratePoliceIP();
 
             message = $"User '{parts[0]}' registered successfully!";
+                              
         }
 
         catch (Exception ex)
@@ -210,7 +218,6 @@ public class UserAction
             return "User doesn't exist";
         }
 
-        const string qCheckPassword = "SELECT id FROM users WHERE username = $1 AND password = $2";
         string message = "";
         string username = parts[0];
         string password = parts[1];

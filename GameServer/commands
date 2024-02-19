@@ -1,11 +1,23 @@
 
-CURL COMMANDS!!!!!!!!!!!
+Player Commands
 
-Register User: curl -X POST http://localhost:3000/newuser -d 'username,password,dummy_password,keyword'
+--- Register ---
+POST localhost:3000/newuser -d 'username,password,keyword'
 
-Attack:	 curl -X PUT http://localhost:3000/attack/targetIP -d 'username,password'
+--- IPScanner ---
+GET localhost:3000/ipscanner.exe -d 'username,password,keyword'
 
-Scan for IPs: curl -X GET http://localhost:3000/ipscanner.exe -d "valdo,valdo123"
+ShowStats:
+-X GET localhost:3000/statuscenter.exe -d 'username,password'
+
+--- Attack ---
+-X PUT localhost:3000/attack/<ip> -d 'username,password'
+
+--- Reset IP ---
+-X PUT localhost:3000/hide-me.exe -d 'username,password'
+
+--- Heal ---
+X- PUT localhost:3000/updatefirewall.exe -d 'username,password'
 
 
 

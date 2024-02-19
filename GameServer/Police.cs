@@ -39,8 +39,8 @@ public class Police
 
         const string qResetStats = @"
 update users
-set detection = 0
-and set hackercoinz = hackercoinz * 0.5
+set detection = 0, 
+hackercoinz = hackercoinz * 0.5
 where id = $1";
 
         try

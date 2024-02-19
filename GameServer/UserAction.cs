@@ -294,9 +294,8 @@ public class UserAction
             //Checks if target is police
             if (targetId == 0)
             {
-                //Policemethod!
-                message = "You tried to hack the police.";
-                return message;
+                var police = new Police(_db);
+                return police.AttackedPolice(GetUserId(parts));
             }
 
             //Check Detection level
@@ -304,14 +303,14 @@ public class UserAction
             cmdReadDetection.Parameters.AddWithValue(userId);
             var detectionReader = cmdReadDetection.ExecuteReader();
 
-            while (detectionReader.Read())
-                {
-                    if (detectionReader.GetInt32(0) > 80)
-                    {
-                        message = "\nDetection level too high to place an attack!!";
-                        return message;
-                    }
-                }
+            //while (detectionReader.Read())
+            //{
+            //    if (detectionReader.GetInt32(0) > 80)
+            //    {
+            //        message = "\nDetection level too high to place an attack!!";
+            //        return message;
+            //    }
+            //}
 
             //Update & read firewall
             using (var cmdUpdateFirewall = _db.CreateCommand(qUpdateFirewall))
@@ -357,24 +356,24 @@ public class UserAction
             cmdUpdateDetection.ExecuteNonQuery();
 
             //Read Detection 
-            int detection;
-            cmdReadDetection = _db.CreateCommand(qReadDetection);
-            cmdReadDetection.Parameters.AddWithValue(userId);
-            var readerDetection = cmdReadDetection.ExecuteReader();
+            //int detection;
+            //cmdReadDetection = _db.CreateCommand(qReadDetection);
+            //cmdReadDetection.Parameters.AddWithValue(userId);
+            //var readerDetection = cmdReadDetection.ExecuteReader();
 
-            while (readerDetection.Read())
-            {
-                detection = readerDetection.GetInt32(0);
-                if (detection < 100)
-                {
-                    message += $"\nWatch out, your detection went up and is now at {detection}%. ";
-                }
-                else
-                {
-                    //Prison function to be called here!!
-                    message += $"\n !!! Police raid  !!! - your detection level reached 100%!";
-                }
-            }
+            //while (readerDetection.Read())
+            //{
+            //    detection = readerDetection.GetInt32(0);
+            //    if (detection < 100)
+            //    {
+            //        message += $"\nWatch out, your detection went up and is now at {detection}%. ";
+            //    }
+            //    else
+            //    {
+            //        //Prison function to be called here!!
+            //        message += $"\n !!! Police raid  !!! - your detection level reached 100%!";
+            //    }
+            //}
 
             //Get part of keyword
             //Check if attack already exists in brute_force table, if not insert
@@ -543,37 +542,5 @@ public class UserAction
         }
         return userId;
     }
-    public string SendToJail(string[] parts)
-    {
-        if (!UserExists(parts))
-        {
-            return "User doesn't exist";
-        }
 
-        const string qActivateJail = @"
-                update users 
-                set isinjail = true 
-                where username = $1 
-                and password = $2;
-                select pg_sleep(60);
-                update users 
-                set isinjail = false 
-                where username = $1 
-                and password = $2";
-
-        try
-        {
-            using var cmd = _db.CreateCommand(qActivateJail);
-            cmd.Parameters.AddWithValue(parts[0]);
-            cmd.Parameters.AddWithValue(parts[1]);
-            cmd.ExecuteNonQuery();
-
-            return $"{parts[0]} sent to jail";
-        }
-        catch (Exception e)
-        {
-            Console.WriteLine("SEND TO JAIL ERROR: " + e.Message);
-        }
-        return $"Couldn't send {parts[0]} to jail";
-    }
 }

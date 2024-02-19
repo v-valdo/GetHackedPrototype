@@ -9,12 +9,13 @@ public class RequestHandler
     private readonly NpgsqlDataSource? _db;
     public int port = 3000;
     private HttpListener _listener = new();
-    private readonly UserAction _action;
-
+    private readonly UserAction _user;
+    private Police _police;
     public RequestHandler(NpgsqlDataSource db)
     {
         _db = db;
-        _action = new UserAction(_db);
+        _user = new UserAction(_db);
+        _police = new(_db);
     }
 
     public void Start()
@@ -30,7 +31,6 @@ public class RequestHandler
         var context = _listener.EndGetContext(result);
         var request = context.Request;
         var response = context.Response;
-        var path = request.Url?.AbsolutePath;
 
         switch (request.HttpMethod)
         {
@@ -53,51 +53,97 @@ public class RequestHandler
         string message = "";
         var (path, parts) = ReadRequestData(request);
 
+        // jail loop
+        if (_police.IsInJail(parts))
+        {
+            message = "You're in jail! Your stats are: \n" + _user.ShowStats(parts);
+            PrintAndLoopback(response, message);
+            return;
+        }
+
+        if (_police.DetectionRate(parts) > 99)
+        {
+            PrintAndLoopback(response, _police.SendToJail(parts));
+            return;
+        }
+
         if (path.Contains("ipscanner.exe"))
         {
-            message = _action.IPScanner(parts);
-            Print(response, message);
+            message = _user.IPScanner(parts);
+            PrintAndLoopback(response, message);
         }
 
         if (path.Contains("statuscenter.exe"))
         {
-            message = _action.ShowStats(parts);
-            Print(response, message);
+            message = _user.ShowStats(parts);
+            PrintAndLoopback(response, message);
         }
+
+        PrintAndLoopback(response, "Invalid endpoint");
     }
     private void Post(HttpListenerResponse response, HttpListenerRequest request)
     {
         string message = "";
         var (path, parts) = ReadRequestData(request);
 
+        if (_police.IsInJail(parts))
+        {
+            message = "You're in jail! Your stats are: \n" + _user.ShowStats(parts);
+            PrintAndLoopback(response, message);
+            return;
+        }
+
+        if (_police.DetectionRate(parts) > 99)
+        {
+            PrintAndLoopback(response, _police.SendToJail(parts));
+            return;
+        }
+
+
         // Register User: curl -X POST http://localhost:3000/newuser -d 'username,password,dummy_password,keyword'
         if (path.Contains("newuser"))
         {
-            message = _action.Register(parts, this);
-            Print(response, message);
+            message = _user.Register(parts, this);
+            PrintAndLoopback(response, message);
         }
+
+        PrintAndLoopback(response, "Invalid endpoint");
     }
     private void Put(HttpListenerResponse response, HttpListenerRequest request)
     {
         string message = "";
         var (path, parts) = ReadRequestData(request);
 
+        if (_police.IsInJail(parts))
+        {
+            message = "You're in jail! Your stats are: \n" + _user.ShowStats(parts);
+            PrintAndLoopback(response, message);
+            return;
+        }
+
+        if (_police.DetectionRate(parts) > 99)
+        {
+            PrintAndLoopback(response, _police.SendToJail(parts));
+            return;
+        }
+
         if (path.Contains("attack")) //Attack! curl -X PUT http://localhost:3000/attack/targetIP -d 'username,password'
         {
-            message = _action.Attack(path, parts);
-            Print(response, message);
+            message = _user.Attack(path, parts);
+            PrintAndLoopback(response, message);
         }
 
         if (path.Contains("hide-me.exe"))
         {
-            message = _action.HideMe(parts, this);
-            Print(response, message);
+            message = _user.HideMe(parts, this);
+            PrintAndLoopback(response, message);
         }
-        if (path.Contains("heal"))
+        if (path.Contains("updatefirewall.exe"))
         {
-            message = _action.Heal(parts);
-            Print(response, message);
+            message = _user.Heal(parts);
+            PrintAndLoopback(response, message);
         }
+        PrintAndLoopback(response, "Invalid endpoint");
     }
     public IPAddress Generate()
     {
@@ -125,7 +171,7 @@ public class RequestHandler
             cmd.ExecuteNonQuery();
         }
     }
-    private void Print(HttpListenerResponse response, string message)
+    private void PrintAndLoopback(HttpListenerResponse response, string message)
     {
         byte[] buffer = Encoding.UTF8.GetBytes(message);
         response.ContentType = "text/plain";

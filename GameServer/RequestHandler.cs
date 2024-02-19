@@ -133,6 +133,12 @@ public class RequestHandler
             PrintAndLoopback(response, message);
         }
 
+        if (path.Contains("finalhack")) //Final Hack curl -X PUT http://localhost:3000/finalhack/dummypassword/targetIP -d 'username,password'
+        {
+            message = _user.FinalHack(path, parts,this);
+            PrintAndLoopback(response, message);
+        }
+
         if (path.Contains("hide-me.exe"))
         {
             message = _user.HideMe(parts, this);
@@ -192,5 +198,66 @@ public class RequestHandler
         }
 
         return (path, data.Split(","));
+    }
+
+    public string GenerateKey(string dummyPass, string key)
+    {
+        int x = dummyPass.Length;
+
+        for (int i = 0; ; i++)
+        {
+            if (x == i)
+                i = 0;
+            if (key.Length == dummyPass.Length)
+                break;
+            key += (key[i]);
+        }
+        return key;
+    }
+
+    public string EncryptDummy(string dummyPass, string key)
+    {
+        string encrypted_dummy = "";
+
+        for (int i = 0; i < dummyPass.Length; i++)
+        {
+            // converting in range 0-25
+            int x = (dummyPass[i] + key[i]) % 26;
+
+            // convert into alphabets(ASCII)
+            x += 'a';
+
+            encrypted_dummy += (char)(x);
+        }
+        return encrypted_dummy;
+    }
+    public string GenerateDummyPass()
+    {
+        Random rand = new Random();
+        string str = "abcdefghijklmnopqrstuvwxyz";
+        int size = 8;
+        string dummyPass = "";
+
+        for (int i = 0; i < size; i++)
+        {
+            int x = rand.Next(26);
+            dummyPass = dummyPass + str[x];
+        }
+        return dummyPass.ToString();
+    }
+
+    public string GenerateKeyword()
+    {
+        Random rand = new Random();
+        string str = "abcdefghijklmnopqrstuvwxyz";
+        int size = 6;
+        string keyword = "";
+
+        for (int i = 0; i < size; i++)
+        {
+            int x = rand.Next(26);
+            keyword = keyword + str[x];
+        }
+        return keyword.ToString();
     }
 }

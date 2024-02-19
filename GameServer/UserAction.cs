@@ -2,6 +2,7 @@ namespace GameServer;
 
 using GetHackedPrototype;
 using Npgsql;
+using System.Diagnostics;
 using System.Net;
 public class UserAction
 {
@@ -239,11 +240,139 @@ public class UserAction
         }
         return message;
     }
+    public string FinalHack(string path, string[] parts, RequestHandler handler)
+    {
+        if (!UserExists(parts))
+        {
+            return "User doesn't exist";
+        }
+
+        string message = "";
+
+        try
+        {
+            int targetId;
+            string username = parts[0];
+            string password = parts[1];
+            string[] items = path.Split("/");
+            string targetIp = items.Last();
+            string dummyGuess = items[items.Length - 2];
+            string dummyPassword;
+
+            const string qSelectTargetId = "SELECT user_id FROM IP WHERE address = $1";
+            const string qUpdateTarget = "UPDATE users SET firewallhealth = 100, hackercoinz = CASE WHEN (hackercoinz-50) >=0 THEN (hackercoinz-50) ELSE 0 END WHERE id = $1";
+            const string qReadFirewall = "SELECT firewallhealth from users WHERE id = $1";
+            const string qReadDummy = "SELECT dummy_pass from dummy_password WHERE id = $1";
+            const string qUpdateHackerCoinz = "UPDATE users SET hackercoinz = hackercoinz + 50 WHERE id = $1";
+            const string qReadHackerCoinz = "SELECT hackercoinz from users WHERE id = $1";
+            const string qResetIp = "UPDATE ip SET address = $1 WHERE user_id = $2";
+            const string qResetDummy = "UPDATE dummy_password SET dummy_pass = $1, keyword = $2, encrypted_dummyp = $3 WHERE user_id = $4";
+
+            //Get user id
+            int userId = GetUserId(parts);
+
+            //Checks if target IP exists & gets target ID
+
+            using (var cmdSelectTargetId = _db.CreateCommand(qSelectTargetId))
+            {
+                cmdSelectTargetId.Parameters.AddWithValue(targetIp);
+
+                using (var readerSelectTargetId = cmdSelectTargetId.ExecuteReader())
+                {
+                    if (readerSelectTargetId.Read())
+                    {
+                        targetId = readerSelectTargetId.GetInt32(0);
+                    }
+                    else
+                    {
+                        message = "Target IP does not exist.";
+                        return message;
+                    }
+                }
+            }
+
+            //Checks firewall = 0
+            var cmdReadFirewall = _db.CreateCommand(qReadFirewall);
+            cmdReadFirewall.Parameters.AddWithValue(targetId);
+            var readerFirewall = cmdReadFirewall.ExecuteReader();
+            while (readerFirewall.Read())
+            {
+                int firewallHealth = readerFirewall.GetInt32(0);
+                if (firewallHealth != 0)
+                {
+                    message = "\nTarget's firewall is not 0. You need to bring it down to 0 for your final hack!";
+                    return message;
+                }
+            }
+
+            //Checks if dummy-password is correct
+            var cmdReadDummy = _db.CreateCommand(qReadDummy);
+            cmdReadDummy.Parameters.AddWithValue(targetId);
+            var readerDummy = cmdReadDummy.ExecuteReader();
+            while (readerDummy.Read())
+            {
+                dummyPassword = readerDummy.GetString(0);
+                if (dummyPassword != dummyGuess)
+                {
+                    message = "\nIncorrect password!";
+                    return message;
+                }
+            }
+
+            //Update user: get 50 HC
+            var cmdUpdateHackerCoinz = _db.CreateCommand(qUpdateHackerCoinz);
+            cmdUpdateHackerCoinz.Parameters.AddWithValue(userId);
+            cmdUpdateHackerCoinz.ExecuteNonQuery();
+
+            //Update target in users: reset firewall & loses 50 HC
+            var cmdUpdateTarget = _db.CreateCommand(qUpdateTarget);
+            cmdUpdateTarget.Parameters.AddWithValue(targetId);
+            cmdUpdateTarget.ExecuteNonQuery();
+
+            //Reset target's IP
+            IPAddress generatedIP = handler.Generate();
+            string userIp = generatedIP.ToString();
+            using var cmdresetIP = _db.CreateCommand(qResetIp);
+            cmdresetIP.Parameters.AddWithValue(userIp); //new IP
+            cmdresetIP.Parameters.AddWithValue(targetId); //user id
+            cmdresetIP.ExecuteNonQuery();
+
+            //Reset targets dummypassword and keyword qResetDummy
+            string newKeyword = handler.GenerateKeyword();
+            string newDummyPassword = handler.GenerateDummyPass();
+            string key = handler.GenerateKey(newDummyPassword,newKeyword);
+            string newEncryptedDummy = handler.EncryptDummy(newKeyword, key);
+
+            using var cmdResetDummy = _db.CreateCommand(qResetDummy);
+            cmdResetDummy.Parameters.AddWithValue(newDummyPassword);
+            cmdResetDummy.Parameters.AddWithValue(newKeyword);
+            cmdResetDummy.Parameters.AddWithValue(newEncryptedDummy);
+            cmdResetDummy.Parameters.AddWithValue(targetId);
+            cmdResetDummy.ExecuteNonQuery();
+
+            //Read Hackercoinz 
+            var cmdHackerCoinz = _db.CreateCommand(qReadHackerCoinz);
+            cmdHackerCoinz.Parameters.AddWithValue(userId);
+            var readerHackerCoinz = cmdHackerCoinz.ExecuteReader();
+            while (readerHackerCoinz.Read())
+            {
+                int hackerCoinz = readerHackerCoinz.GetInt32(0);
+                message += $"\nFinal hacking successfull!!\nYou have acquired 50 coinz and now have {hackerCoinz} hackercoinz in your account.\nYour target's IP, firewall and login information have been reset.";
+            }
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine($"ATTACK ERROR: {e.Message}");
+        }
+        return message;
+    }    
+
+
     public string Attack(string path, string[] parts)
     {
         if (!UserExists(parts))
         {
-            return "User doesnt exist";
+            return "User does not exist";
         }
 
         string message = "";
@@ -273,6 +402,7 @@ public class UserAction
             int userId = GetUserId(parts);
 
             //Checks if target IP exists & gets target ID
+       
             using (var cmdSelectTargetId = _db.CreateCommand(qSelectTargetId))
             {
                 cmdSelectTargetId.Parameters.AddWithValue(targetIp);
@@ -528,9 +658,8 @@ public class UserAction
         }
         catch (Exception e)
         {
-            Console.WriteLine("GetUsedID " + e.Message);
+            Console.WriteLine("GetUserID " + e.Message);
         }
         return userId;
     }
-
 }

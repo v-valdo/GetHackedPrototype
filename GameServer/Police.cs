@@ -39,7 +39,8 @@ public class Police
 
         const string qResetStats = @"
 update users
-set detection = 0 
+set detection = 0
+and set hackercoinz = hackercoinz * 0.5
 where id = $1";
 
         try
@@ -56,7 +57,7 @@ where id = $1";
             resetCmd.ExecuteNonQuery();
             Console.WriteLine($"User {userId}:s detection reset to 0");
 
-            string jailMsg = "You have been detected by the authorities! \n You have been imprisoned for 1 minute and can no longer use your computer.";
+            string jailMsg = "You have been detected by the authorities! \n You have been imprisoned for 1 minute and can no longer use your computer. \n You lost half of your HackerCoinz";
             return jailMsg;
         }
         catch (Exception e)

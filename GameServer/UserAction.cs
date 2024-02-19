@@ -303,15 +303,6 @@ public class UserAction
             cmdReadDetection.Parameters.AddWithValue(userId);
             var detectionReader = cmdReadDetection.ExecuteReader();
 
-            //while (detectionReader.Read())
-            //{
-            //    if (detectionReader.GetInt32(0) > 80)
-            //    {
-            //        message = "\nDetection level too high to place an attack!!";
-            //        return message;
-            //    }
-            //}
-
             //Update & read firewall
             using (var cmdUpdateFirewall = _db.CreateCommand(qUpdateFirewall))
             {
@@ -356,24 +347,23 @@ public class UserAction
             cmdUpdateDetection.ExecuteNonQuery();
 
             //Read Detection 
-            //int detection;
-            //cmdReadDetection = _db.CreateCommand(qReadDetection);
-            //cmdReadDetection.Parameters.AddWithValue(userId);
-            //var readerDetection = cmdReadDetection.ExecuteReader();
+            int detection;
+            cmdReadDetection = _db.CreateCommand(qReadDetection);
+            cmdReadDetection.Parameters.AddWithValue(userId);
+            var readerDetection = cmdReadDetection.ExecuteReader();
 
-            //while (readerDetection.Read())
-            //{
-            //    detection = readerDetection.GetInt32(0);
-            //    if (detection < 100)
-            //    {
-            //        message += $"\nWatch out, your detection went up and is now at {detection}%. ";
-            //    }
-            //    else
-            //    {
-            //        //Prison function to be called here!!
-            //        message += $"\n !!! Police raid  !!! - your detection level reached 100%!";
-            //    }
-            //}
+            while (readerDetection.Read())
+            {
+                detection = readerDetection.GetInt32(0);
+                if (detection < 100)
+                {
+                    message += $"\nWatch out, your detection went up and is now at {detection}%. ";
+                }
+                else
+                {
+                    message += $"\n BE AWARE -- your risk of detection reached 100%!";
+                }
+            }
 
             //Get part of keyword
             //Check if attack already exists in brute_force table, if not insert

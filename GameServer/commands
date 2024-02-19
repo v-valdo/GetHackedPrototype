@@ -2,15 +2,13 @@
 Player Commands
 
 --- Register ---
-POST localhost:3000/newuser -d 'username,password,keyword'
+curl -X POST localhost:3000/newuser -d 'username,password'
 
 --- IPScanner ---
 GET localhost:3000/ipscanner.exe -d 'username,password,keyword'
 
-ShowStats:
+--- ShowStats ---
 -X GET localhost:3000/statuscenter.exe -d 'username,password'
-
-Register User: curl -X POST http://localhost:3000/newuser -d 'username,password,keyword'
 
 --- Reset IP ---
 -X PUT localhost:3000/hide-me.exe -d 'username,password'
@@ -18,5 +16,9 @@ Register User: curl -X POST http://localhost:3000/newuser -d 'username,password,
 --- Heal ---
 X- PUT localhost:3000/updatefirewall.exe -d 'username,password'
 
+-- Attack ---
+curl -X PUT localhost:3000/attack/insertIPaddress -d 'username,password'
 
+--- Auto Decrypt ---
+curl -X GET localhost:3000/autodecrypt/insertIPaddress/insertKeyword -d 'username,password'
 

@@ -80,6 +80,12 @@ public class RequestHandler
             PrintAndLoopback(response, message);
         }
 
+        if (path.Contains("autodecrypt"))
+        {
+            message = _user.AutoDecrypt(path, parts);
+            PrintAndLoopback(response, message);
+        }
+
         PrintAndLoopback(response, "Invalid endpoint");
     }
     private void Post(HttpListenerResponse response, HttpListenerRequest request)
@@ -260,15 +266,18 @@ public class RequestHandler
         return dummyPass.ToString();
     }
 
-    public static bool checkKeyword(string keyword)
+    public string GenerateKeyword()
     {
-        foreach (var item in keyword)
+        Random rand = new Random();
+        string str = "abcdefghijklmnopqrstuvwxyz";
+        int size = 6;
+        string keyword = "";
+
+        for (int i = 0; i < size; i++)
         {
-            if (item is >= 'a' and <= 'z')
-                continue;
-            else
-                return false;
+            int x = rand.Next(26);
+            keyword = keyword + str[x];
         }
-        return true;
+        return keyword.ToString();
     }
 }

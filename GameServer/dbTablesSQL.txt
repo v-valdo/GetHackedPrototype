@@ -23,7 +23,7 @@ id SERIAL NOT NULL,
 user_id INT NOT NULL,
 dummy_pass TEXT NOT NULL,
 keyword TEXT NOT NULL,
-encrypted_dummyP TEXT DEFAULT NULL
+encrypted_dummyP TEXT NOT NULL
 );
 ALTER TABLE dummy_password
 ADD PRIMARY KEY(id),

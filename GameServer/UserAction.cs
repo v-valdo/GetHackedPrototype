@@ -160,16 +160,11 @@ public class UserAction
         string message = "";
 
         string qRegister = "INSERT INTO users(username,password) VALUES ($1, $2) RETURNING id";
-        string qAddDummy = "INSERT INTO dummy_password(user_id,dummy_pass,keyword) VALUES ($1, $2, $3)";
+        string qAddDummy = "INSERT INTO dummy_password(user_id,dummy_pass,keyword,encrypted_dummyP) VALUES ($1, $2, $3, $4)";
         string qAddIp = "INSERT INTO ip(address,user_id) VALUES ($1, $2)";
-
+       
         try
         {
-            if (parts[3].Length != 6)
-            {
-                message += "Keyword must have 6 characters.";
-                return message;
-            }
 
             using var cmd = _db.CreateCommand(qRegister);
             cmd.Parameters.AddWithValue(parts[0]); //username
@@ -178,10 +173,18 @@ public class UserAction
             int userId = (int)cmd.ExecuteScalar();
 
             //INSERT into dummy_password table
+
+            string keyword = handler.GenerateKeyword();
+            string dummyPass = handler.GenerateDummyPass();
+            string key = handler.GenerateKey(dummyPass, keyword);
+            string encrypted_dummy = handler.EncryptDummy(keyword, key);
+
             using var cmd2 = _db.CreateCommand(qAddDummy);
             cmd2.Parameters.AddWithValue(userId); //user id
-            cmd2.Parameters.AddWithValue(parts[2]); //dummy password
-            cmd2.Parameters.AddWithValue(parts[3]); //keyword
+            cmd2.Parameters.AddWithValue(dummyPass); //dummy password
+            cmd2.Parameters.AddWithValue(keyword); //keyword
+            cmd2.Parameters.AddWithValue(encrypted_dummy); // encrypted Dummy
+
             cmd2.ExecuteNonQuery();
 
             //INSERT into ip table
@@ -195,6 +198,7 @@ public class UserAction
             handler.GeneratePoliceIP();
 
             message = $"User '{parts[0]}' registered successfully!";
+                              
         }
 
         catch (Exception ex)
@@ -211,7 +215,6 @@ public class UserAction
             return "User doesn't exist";
         }
 
-        const string qCheckPassword = "SELECT id FROM users WHERE username = $1 AND password = $2";
         string message = "";
         string username = parts[0];
         string password = parts[1];
@@ -372,7 +375,7 @@ public class UserAction
     {
         if (!UserExists(parts))
         {
-            return "User does not exist";
+            return "User doesn't exist";
         }
 
         string message = "";
@@ -611,6 +614,70 @@ public class UserAction
         }
         return message;
     }
+
+    public string AutoDecrypt(string path, string[] parts)
+    {
+        if (!UserExists(parts))
+        {
+            return "User does not exist";
+        }
+
+        string message = "";
+
+        try
+        {
+            string[] items = path.Split("/");
+            string targetIp = items[2];
+            string keyword = items.Last();
+            int targetId;
+
+            string qCheckIPKeyword = "SELECT COUNT (*) FROM brute_force WHERE target_ip = $1 AND cracking = $2";
+            string qGetDummyPass = "SELECT dummy_pass FROM dummy_password WHERE user_id = $1";
+            string qSelectTargetId = "SELECT user_id FROM IP WHERE address = $1";
+
+            var cmdCheckIPKeyword = _db.CreateCommand(qCheckIPKeyword);
+            cmdCheckIPKeyword.Parameters.AddWithValue(targetIp);
+            cmdCheckIPKeyword.Parameters.AddWithValue(keyword);
+            var rowCount = (long)cmdCheckIPKeyword.ExecuteScalar();
+
+            if (rowCount == 0)
+            {
+                message = "This IP address does not match the given keyword. No hacking for you";
+            }
+
+            if (rowCount == 1)
+            {
+                //Checks if target IP exists & gets target ID
+                using (var cmdSelectTargetId = _db.CreateCommand(qSelectTargetId))
+                {
+                    cmdSelectTargetId.Parameters.AddWithValue(targetIp);
+
+                    using (var readerSelectTargetId = cmdSelectTargetId.ExecuteReader())
+                    {
+                        if (readerSelectTargetId.Read())
+                        {
+                            targetId = readerSelectTargetId.GetInt32(0);
+                        }
+                        else
+                        {
+                            message = "Target IP does not exist.";
+                            return message;
+                        }
+                    }
+                }
+                var cmdGetDummyPass = _db.CreateCommand(qGetDummyPass);
+                cmdGetDummyPass.Parameters.AddWithValue(targetId);
+                var dummypass = cmdGetDummyPass.ExecuteScalar() as string;
+
+                message = $"\nYour target's password is {dummypass}";
+            }
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine("Auto Decrypt ERROR: " + e.Message);
+        }
+        return message;
+    }
     public bool UserExists(string[] parts)
     {
         var qCheckUser = "SELECT COUNT(*) FROM users WHERE username = $1 AND password = $2;";
@@ -658,8 +725,21 @@ public class UserAction
         }
         catch (Exception e)
         {
-            Console.WriteLine("GetUserID " + e.Message);
+
+            Console.WriteLine("GetUserdID ERROR " + e.Message);
         }
         return userId;
+    }
+
+    public bool CheckKeyword(string parts)
+    {
+        foreach (var item in parts)
+        {
+            if (item is >= 'a' and <= 'z')
+                continue;
+            else
+                return false;
+        }
+        return true;
     }
 }

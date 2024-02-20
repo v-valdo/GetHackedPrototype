@@ -155,6 +155,9 @@ public class User
                     Console.Clear();
                     await WelcomeMenu();
                     break;
+                case "exit":
+                    Environment.Exit(0);
+                    break;
                 default:
                     Console.WriteLine("Command not found");
                     break;

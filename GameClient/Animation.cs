@@ -15,8 +15,15 @@ public class Animation
     }
     public static void Raided()
     {
-        string[] hacked = File.ReadAllLines("../../../ASCII/Raided.txt");
-        foreach (var line in hacked)
+        string raidedPath = "../../../ASCII/Raided.txt";
+
+        if (!File.Exists(raidedPath))
+        {
+            raidedPath = "ASCII/Raided.txt";
+        }
+
+        string[] raided = File.ReadAllLines(raidedPath);
+        foreach (var line in raided)
         {
             Console.WriteLine(line);
             Thread.Sleep(26);

@@ -145,6 +145,11 @@ public class Software
             using HttpResponseMessage response = await client.PutAsync(client.BaseAddress + $"attack/{ip}", textContent);
             var jsonResponse = await response.Content.ReadAsStringAsync();
             Console.WriteLine($"{jsonResponse}\n");
+
+            if (jsonResponse.Contains("You have been detected by the authorities!"))
+            {
+                Animation.Raided();
+            }
         }
         catch (Exception e)
         {

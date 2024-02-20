@@ -9,7 +9,7 @@ public class Animation
             TextPosition.Center($"Configuring {software.Name}");
             Console.WriteLine();
             TextPosition.Center(i + "%");
-            Thread.Sleep(20);
+            Thread.Sleep(10);
             Console.Clear();
         }
     }
@@ -27,7 +27,13 @@ public class Animation
     }
     public static void Title()
     {
-        string[] title = File.ReadAllLines("../../../ASCII/Title.txt");
+        string titlePath = "../../../ASCII/Title.txt";
+
+        if (!File.Exists(titlePath))
+        {
+            titlePath = "ASCII/Title.txt";
+        }
+        string[] title = File.ReadAllLines(titlePath);
         foreach (var line in title)
         {
             Console.WriteLine(line);

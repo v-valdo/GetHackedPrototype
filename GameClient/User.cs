@@ -1,46 +1,34 @@
 using System.Text;
 namespace GameClient;
-
-
 public class User
 {
-    private static HttpClient? _client { get; set; }
-    private static Uri? Uri { get; set; }
+    private static HttpClient _client = new HttpClient();
+    private static Uri _baseUri = new Uri("http://localhost:3000");
     public string? Username;
     public string? Password;
-    public User()
+
+    static User()
     {
-        _client = new();
-        _client.BaseAddress = new Uri("http://localhost:3000");
-        Uri = _client.BaseAddress;
+        _client.BaseAddress = _baseUri;
     }
     public string Register()
     {
-        string? username = "";
-        string? password = "";
-        string? dummy = "";
-        string? keyword = "";
-
         while (true)
         {
             Console.Clear();
             TextPosition.Center("Enter Username");
-            username = Console.ReadLine();
+            string? username = Console.ReadLine();
             TextPosition.Center("Enter Password");
-            password = Console.ReadLine();
-            TextPosition.Center("Enter Dummy Password");
-            dummy = Console.ReadLine();
-            TextPosition.Center("Enter Keyword (6 characters)");
-            keyword = Console.ReadLine();
+            string? password = Console.ReadLine();
             Console.WriteLine($"{username} created with password {password}");
             Thread.Sleep(250);
-            if (username?.Length > 2 && password?.Length > 2 && dummy?.Length > 2 && keyword?.Length == 6)
+            if (username?.Length > 3 && password?.Length > 3)
             {
-                return $"{username},{password},{dummy},{keyword}";
+                return $"{username},{password}";
             }
             else
             {
-                Console.WriteLine("Invalid user info, keep in mind - keyword has to be 6 characters");
+                Console.WriteLine("Invalid input. User and password needs to be over 3 characters");
                 Thread.Sleep(300);
                 continue;
             }
@@ -64,7 +52,7 @@ public class User
         user.Password = Console.ReadLine();
         return user;
     }
-    public static async Task WelcomeMenu()
+    public async Task WelcomeMenu()
     {
         while (true)
         {
@@ -77,13 +65,14 @@ public class User
                         User user = new();
 
                         string? userDetails = user.Register();
-                        await RegisterRequest(_client, Uri, userDetails);
+                        await RegisterRequest(_client, _baseUri, userDetails);
 
                         string[] parts = userDetails.Split(",");
                         await user.LoginAction(parts[0], parts[1]);
                         break;
                     case 2:
                         User loginUser = LoginMenu();
+
                         await loginUser.LoginAction(loginUser.Username, loginUser.Password);
                         break;
                     case 3:
@@ -125,23 +114,38 @@ public class User
                 case "h":
                     Help();
                     break;
+                case "run injector":
+                    Console.Clear();
+                    var (injectIP, password) = Prompts.InjectorPrompt();
+                    await software.Inject(_client, user, injectIP, password);
+                    break;
                 case "clear":
                     Console.Clear();
                     break;
                 case "run ipscanner":
-                    await Software.IPScanner(_client, Uri, user);
+                    Console.Clear();
+                    await software.IPScanner(_client, _baseUri, user);
                     break;
                 case "run hideme":
-                    //software.HideMe();
+                    Console.Clear();
+                    await software.HideMe(_client, user);
                     break;
                 case "run statuscenter":
-                    await Software.StatusCenter(_client, Uri, user);
+                    await software.StatusCenter(_client, _baseUri, user);
                     break;
                 case "run wallbreaker":
+                    string breakIP = Prompts.AttackPrompt();
+                    await software.Attack(_client, user, breakIP);
+                    break;
+                case "run firewallpatcher":
+                    await software.Heal(_client, user);
+                    break;
+                case "logout":
                     Console.Clear();
-                    Console.Write("Enter target IP: ");
-                    string ip = Console.ReadLine() ?? "0";
-                    await Software.Attack(_client, Uri, user, ip);
+                    await WelcomeMenu();
+                    break;
+                default:
+                    Console.WriteLine("Command not found");
                     break;
             }
         }
@@ -151,13 +155,17 @@ public class User
         Console.Clear();
         Animation.Space();
         TextPosition.Center("Installed Commands");
-        TextPosition.Center("> run ipscanner");
-        TextPosition.Center("> run wallbreaker");
-        TextPosition.Center("> run hideme");
-        TextPosition.Center("> run keyencryptor");
-        TextPosition.Center("> run hddwiper");
-        TextPosition.Center("> stats");
-        TextPosition.Center("> clear");
+        TextPosition.Center("> run ipscanner"); // ipscanner
+        TextPosition.Center("> run wallbreaker"); // Attack IP
+        TextPosition.Center("> run hideme"); // reset IP
+        TextPosition.Center("> run decryptor"); // decrypts  
+        TextPosition.Center("> run firewallpatcher"); // calls heal method
+        TextPosition.Center("> run injector"); // final attack
+        TextPosition.Center("> run statuscenter"); // show stats
+        TextPosition.Center("> run notepad"); // show notepad
+        TextPosition.Center("> clear"); // clears console
+        TextPosition.Center("> logout"); // logs out user
+
         TextPosition.Center("> exit");
         Console.WriteLine();
     }

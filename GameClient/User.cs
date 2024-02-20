@@ -20,19 +20,15 @@ public class User
             string? username = Console.ReadLine();
             TextPosition.Center("Enter Password");
             string? password = Console.ReadLine();
-            TextPosition.Center("Enter Dummy Password");
-            string? dummy = Console.ReadLine();
-            TextPosition.Center("Enter Keyword (6 characters)");
-            string? keyword = Console.ReadLine();
             Console.WriteLine($"{username} created with password {password}");
             Thread.Sleep(250);
-            if (username?.Length > 2 && password?.Length > 2 && dummy?.Length > 2 && keyword?.Length == 6)
+            if (username?.Length > 3 && password?.Length > 3)
             {
-                return $"{username},{password},{dummy},{keyword}";
+                return $"{username},{password}";
             }
             else
             {
-                Console.WriteLine("Invalid user info, keep in mind - keyword has to be 6 characters");
+                Console.WriteLine("Invalid input. User and password needs to be over 3 characters");
                 Thread.Sleep(300);
                 continue;
             }
@@ -141,7 +137,7 @@ public class User
                     string breakIP = Prompts.AttackPrompt();
                     await software.Attack(_client, user, breakIP);
                     break;
-                case "firewallpatcher":
+                case "run firewallpatcher":
                     await software.Heal(_client, user);
                     break;
                 case "logout":
@@ -163,8 +159,13 @@ public class User
         TextPosition.Center("> run wallbreaker"); // Attack IP
         TextPosition.Center("> run hideme"); // reset IP
         TextPosition.Center("> run decryptor"); // decrypts  
+        TextPosition.Center("> run firewallpatcher"); // calls heal method
+        TextPosition.Center("> run injector"); // final attack
         TextPosition.Center("> run statuscenter"); // show stats
+        TextPosition.Center("> run notepad"); // show notepad
         TextPosition.Center("> clear"); // clears console
+        TextPosition.Center("> logout"); // logs out user
+
         TextPosition.Center("> exit");
         Console.WriteLine();
     }

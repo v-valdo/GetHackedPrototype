@@ -52,6 +52,33 @@ public class Software
             Console.WriteLine(e.Message);
         }
     }
+    public async Task Notepad(HttpClient client, Uri uri, User user)
+    {
+        using StringContent textContent = new StringContent($"{user.Username},{user.Password}", Encoding.UTF8, "text/plain");
+        Software software = new();
+        software.Name = "SuperNotepad.exe";
+
+        Animation.Loading(software);
+        try
+        {
+            var request = new HttpRequestMessage
+            {
+                Method = HttpMethod.Get,
+                RequestUri = new($"{uri}notepad.exe"),
+                Content = new StringContent($"{user.Username},{user.Password}", Encoding.UTF8, MediaTypeNames.Application.Json /* or "application / json" in older versions */),
+            };
+
+            var response = await client.SendAsync(request).ConfigureAwait(false);
+            response.EnsureSuccessStatusCode();
+
+            var responseBody = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+            Console.WriteLine(responseBody);
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e.Message);
+        }
+    }
     public async Task StatusCenter(HttpClient client, Uri uri, User user)
     {
         using StringContent textContent = new StringContent($"{user.Username},{user.Password}", Encoding.UTF8, "text/plain");

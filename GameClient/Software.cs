@@ -55,16 +55,42 @@ public class Software
     public async Task Notepad(HttpClient client, Uri uri, User user)
     {
         using StringContent textContent = new StringContent($"{user.Username},{user.Password}", Encoding.UTF8, "text/plain");
-        Software software = new();
-        software.Name = "SuperNotepad.exe";
-
-        Animation.Loading(software);
         try
         {
             var request = new HttpRequestMessage
             {
                 Method = HttpMethod.Get,
                 RequestUri = new($"{uri}notepad.exe"),
+                Content = new StringContent($"{user.Username},{user.Password}", Encoding.UTF8, MediaTypeNames.Application.Json /* or "application / json" in older versions */),
+            };
+
+            var response = await client.SendAsync(request).ConfigureAwait(false);
+            response.EnsureSuccessStatusCode();
+
+            var responseBody = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+            Console.WriteLine("MY NOTEPAD:");
+            Console.WriteLine("----------");
+            Console.WriteLine(responseBody);
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e.Message);
+        }
+    }
+    public async Task AutoDecryptor(HttpClient client, Uri uri, User user, string ip, string password)
+    {
+        using StringContent textContent = new StringContent($"{user.Username},{user.Password}", Encoding.UTF8, "text/plain");
+        Software software = new();
+        software.Name = "AutoDecryptor.exe";
+
+        Animation.Loading(software);
+
+        try
+        {
+            var request = new HttpRequestMessage
+            {
+                Method = HttpMethod.Get,
+                RequestUri = new($"{uri}autodecrypt.exe/{ip}/{password}"),
                 Content = new StringContent($"{user.Username},{user.Password}", Encoding.UTF8, MediaTypeNames.Application.Json /* or "application / json" in older versions */),
             };
 
@@ -85,7 +111,6 @@ public class Software
         Software StatusCenter = new();
         StatusCenter.Name = "StatusCenter_V2.exe";
 
-        Animation.Loading(StatusCenter);
         Animation.Loading(StatusCenter);
 
         try

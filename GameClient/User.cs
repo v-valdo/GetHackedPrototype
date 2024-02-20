@@ -116,11 +116,16 @@ public class User
                     break;
                 case "run injector":
                     Console.Clear();
+                    await software.Notepad(_client, _baseUri, user);
                     var (injectIP, password) = Prompts.InjectorPrompt();
                     await software.Inject(_client, user, injectIP, password);
                     break;
                 case "clear":
                     Console.Clear();
+                    break;
+                case "run notepad":
+                    Console.Clear();
+                    await software.Notepad(_client, _baseUri, user);
                     break;
                 case "run ipscanner":
                     Console.Clear();
@@ -140,6 +145,12 @@ public class User
                 case "run firewallpatcher":
                     await software.Heal(_client, user);
                     break;
+                case "run autodecryptor":
+                    Console.Clear();
+                    await software.Notepad(_client, _baseUri, user);
+                    var (ip, decryptPass) = Prompts.DecryptorPrompt();
+                    await software.AutoDecryptor(_client, _baseUri, user, ip, decryptPass);
+                    break;
                 case "logout":
                     Console.Clear();
                     await WelcomeMenu();
@@ -158,7 +169,7 @@ public class User
         TextPosition.Center("> run ipscanner"); // ipscanner
         TextPosition.Center("> run wallbreaker"); // Attack IP
         TextPosition.Center("> run hideme"); // reset IP
-        TextPosition.Center("> run decryptor"); // decrypts  
+        TextPosition.Center("> run autodecryptor"); // decrypts  
         TextPosition.Center("> run firewallpatcher"); // calls heal method
         TextPosition.Center("> run injector"); // final attack
         TextPosition.Center("> run statuscenter"); // show stats

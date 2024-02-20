@@ -2,8 +2,6 @@ namespace GameServer;
 
 using GetHackedPrototype;
 using Npgsql;
-using System.Collections.Generic;
-using System.Diagnostics;
 using System.Net;
 public class UserAction
 {
@@ -88,7 +86,7 @@ public class UserAction
                 cmdUpdateIp.ExecuteNonQuery();
 
                 transaction.Commit();
-
+                connection.Close();
                 message += $"You paid 30 HackerCoinz and changed your IP to {newIP}. Your detection risk in now zero.";
             }
         }
@@ -250,6 +248,7 @@ public class UserAction
         {
             return "User does not exist";
         }
+        ShowNotepad(parts);
 
         string message = "";
 

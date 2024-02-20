@@ -248,7 +248,6 @@ public class UserAction
         {
             return "User does not exist";
         }
-        ShowNotepad(parts);
 
         string message = "";
 

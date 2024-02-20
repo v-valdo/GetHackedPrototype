@@ -32,6 +32,11 @@ public class RequestHandler
         var request = context.Request;
         var response = context.Response;
 
+        if (!request.HasEntityBody)
+        {
+            PrintAndLoopback(response, "No data added to the request");
+            return;
+        }
         switch (request.HttpMethod)
         {
             case "GET":
@@ -50,6 +55,7 @@ public class RequestHandler
     }
     private void Get(HttpListenerResponse response, HttpListenerRequest request)
     {
+
         string message = "";
         var (path, parts) = ReadRequestData(request);
 

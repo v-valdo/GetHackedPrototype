@@ -370,8 +370,6 @@ public class UserAction
         }
         return message;
     }
-
-
     public string Attack(string path, string[] parts)
     {
         if (!UserExists(parts))
@@ -660,7 +658,6 @@ public class UserAction
         }
         return message;
     }
-
     public string ShowNotepad(string[] parts)
     {
         if (!UserExists(parts))

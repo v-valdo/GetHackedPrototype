@@ -8,13 +8,14 @@ Player Commands
 -X GET localhost:3000/ipscanner.exe -d 'username,password,keyword'
 
 --- ShowStats ---
--X GET localhost:3000/statuscenter.exe -d 'username,password'
+curl -X GET localhost:3000/statuscenter.exe -d 'username,password'
 
 --- Reset IP ---
 -X PUT localhost:3000/hideme.exe -d 'username,password'
 
+
 --- Heal ---
-X- PUT localhost:3000/updatefirewall.exe -d 'username,password'
+curl X- PUT localhost:3000/updatefirewall.exe -d 'username,password'
 
 -- Attack ---
 -X PUT localhost:3000/attack/insertIPaddress -d 'username,password'
@@ -22,3 +23,5 @@ X- PUT localhost:3000/updatefirewall.exe -d 'username,password'
 --- Auto Decrypt ---
 -X GET localhost:3000/autodecrypt/insertIPaddress/insertKeyword -d 'username,password'
 
+--- Final Hack ---
+curl -X PUT localhost:3000/finalhack/insertdummypassword/inserttargetIP -d 'username,password'

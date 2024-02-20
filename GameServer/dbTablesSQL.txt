@@ -40,13 +40,14 @@ ADD CONSTRAINT FK_brute_force_hacker_id FOREIGN KEY (hacker_id) REFERENCES users
 CREATE TABLE notepad(
 id SERIAL NOT NULL,
 user_id INT NOT NULL,
-IP_address TEXT NOT NULL,
-number_of_attacks INT NOT NULL
+ip_address TEXT NOT NULL,
+number_of_attacks INT NOT NULL,
+keyword TEXT NOT NULL,
+dummy_pass TEXT NOT NULL
 );
 ALTER TABLE notepad
 ADD PRIMARY KEY(id),
-ADD CONSTRAINT FK_notepad_user_id FOREIGN KEY (user_id) REFERENCES users(id),
-ADD CONSTRAINT FK_notepad_IP_address FOREIGN KEY (IP_address) REFERENCES IP(address);
+ADD CONSTRAINT FK_notepad_user_id FOREIGN KEY (user_id) REFERENCES users(id);
 INSERT INTO users(id,username,password) VALUES (0, 'police', 12345);
 CREATE TABLE users_jail (
     user_id INTEGER NOT NULL,

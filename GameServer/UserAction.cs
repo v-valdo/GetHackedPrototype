@@ -2,6 +2,7 @@ namespace GameServer;
 
 using GetHackedPrototype;
 using Npgsql;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net;
 public class UserAction
@@ -162,7 +163,7 @@ public class UserAction
         string qRegister = "INSERT INTO users(username,password) VALUES ($1, $2) RETURNING id";
         string qAddDummy = "INSERT INTO dummy_password(user_id,dummy_pass,keyword,encrypted_dummyP) VALUES ($1, $2, $3, $4)";
         string qAddIp = "INSERT INTO ip(address,user_id) VALUES ($1, $2)";
-       
+
         try
         {
 
@@ -198,7 +199,7 @@ public class UserAction
             handler.GeneratePoliceIP();
 
             message = $"User '{parts[0]}' registered successfully!";
-                              
+
         }
 
         catch (Exception ex)
@@ -247,7 +248,7 @@ public class UserAction
     {
         if (!UserExists(parts))
         {
-            return "User doesn't exist";
+            return "User does not exist";
         }
 
         string message = "";
@@ -322,6 +323,8 @@ public class UserAction
                 }
             }
 
+            DeleteNotepadEntry(userId, targetIp);
+
             //Update user: get 50 HC
             var cmdUpdateHackerCoinz = _db.CreateCommand(qUpdateHackerCoinz);
             cmdUpdateHackerCoinz.Parameters.AddWithValue(userId);
@@ -343,7 +346,7 @@ public class UserAction
             //Reset targets dummypassword and keyword qResetDummy
             string newKeyword = handler.GenerateKeyword();
             string newDummyPassword = handler.GenerateDummyPass();
-            string key = handler.GenerateKey(newDummyPassword,newKeyword);
+            string key = handler.GenerateKey(newDummyPassword, newKeyword);
             string newEncryptedDummy = handler.EncryptDummy(newKeyword, key);
 
             using var cmdResetDummy = _db.CreateCommand(qResetDummy);
@@ -360,7 +363,7 @@ public class UserAction
             while (readerHackerCoinz.Read())
             {
                 int hackerCoinz = readerHackerCoinz.GetInt32(0);
-                message += $"\nFinal hacking successfull!!\nYou have acquired 50 coinz and now have {hackerCoinz} hackercoinz in your account.\nYour target's IP, firewall and login information have been reset.";
+                message += $"\nFinal hacking successful!\nYou have acquired 50 coinz and now have {hackerCoinz} HackerCoinz in your account.\nYour target's IP, firewall and login information have been reset.";
             }
         }
         catch (Exception e)
@@ -368,7 +371,7 @@ public class UserAction
             Console.WriteLine($"ATTACK ERROR: {e.Message}");
         }
         return message;
-    }    
+    }
 
 
     public string Attack(string path, string[] parts)
@@ -392,6 +395,10 @@ public class UserAction
         const string qInsertBF = "INSERT INTO brute_force (hacker_id, target_ip, cracking) VALUES ($1, $2, $3);";
         const string qReadCurrentCracking = "SELECT cracking FROM brute_force WHERE hacker_id = $1 AND target_ip= $2";
         const string qUpdateBF = "UPDATE brute_force SET cracking = $1 WHERE hacker_id = $2 AND target_ip= $3;";
+        const string qCheckNotepad = "SELECT COUNT (*) FROM notepad WHERE user_id = $1 AND ip_address = $2";
+        const string qUpdateKeywordNP = "UPDATE notepad SET keyword = $1 WHERE user_id = $2 AND ip_address = $3";
+        const string qReadNoAttacksNP = "SELECT number_of_attacks FROM notepad WHERE user_id = $1 AND ip_address = $2";
+        const string qUpdateNoAttacksNP = "UPDATE notepad SET number_of_attacks = $1 WHERE user_id = $2 AND ip_address = $3";
 
         try
         {
@@ -405,7 +412,7 @@ public class UserAction
             int userId = GetUserId(parts);
 
             //Checks if target IP exists & gets target ID
-       
+
             using (var cmdSelectTargetId = _db.CreateCommand(qSelectTargetId))
             {
                 cmdSelectTargetId.Parameters.AddWithValue(targetIp);
@@ -430,6 +437,35 @@ public class UserAction
                 var police = new Police(_db);
                 return police.AttackedPolice(GetUserId(parts));
             }
+
+            var cmdCheckNotepad = _db.CreateCommand(qCheckNotepad);
+            cmdCheckNotepad.Parameters.AddWithValue(userId);
+            cmdCheckNotepad.Parameters.AddWithValue(targetIp);
+            var count = (long?)cmdCheckNotepad.ExecuteScalar();
+
+            if (count == 0)
+            {
+                NewNotepadEntry(userId, targetIp);
+            }
+
+            int numberOfAttacks = 0;
+
+            var cmdReadNoAttacks = _db.CreateCommand(qReadNoAttacksNP);
+            cmdReadNoAttacks.Parameters.AddWithValue(userId);
+            cmdReadNoAttacks.Parameters.AddWithValue(targetIp);
+            var attackReader = cmdReadNoAttacks.ExecuteReader();
+
+            while (attackReader.Read())
+            {
+                numberOfAttacks = attackReader.GetInt32(0);
+                numberOfAttacks++;
+            }
+
+            var cmdUpdateNoAttacks = _db.CreateCommand(qUpdateNoAttacksNP);
+            cmdUpdateNoAttacks.Parameters.AddWithValue(numberOfAttacks);
+            cmdUpdateNoAttacks.Parameters.AddWithValue(userId);
+            cmdUpdateNoAttacks.Parameters.AddWithValue(targetIp);
+            cmdUpdateNoAttacks.ExecuteNonQuery();
 
             //Check Detection level
             var cmdReadDetection = _db.CreateCommand(qReadDetection);
@@ -504,7 +540,7 @@ public class UserAction
             var cmdCheckBF = _db.CreateCommand(qCheckBF);
             cmdCheckBF.Parameters.AddWithValue(userId);
             cmdCheckBF.Parameters.AddWithValue(targetIp);
-            var rowCount = (long)cmdCheckBF.ExecuteScalar();
+            var rowCount = (long?)cmdCheckBF.ExecuteScalar();
 
             if (rowCount == 0)
             {
@@ -527,6 +563,12 @@ public class UserAction
                 cmdUpdateBF.Parameters.AddWithValue(targetIp);
                 cmdUpdateBF.Parameters.AddWithValue(firstLetter);
                 cmdUpdateBF.ExecuteNonQuery();
+
+                var cmdUpdateNP = _db.CreateCommand(qUpdateKeywordNP);
+                cmdUpdateNP.Parameters.AddWithValue(firstLetter);
+                cmdUpdateNP.Parameters.AddWithValue(userId);
+                cmdUpdateNP.Parameters.AddWithValue(targetIp);
+                cmdUpdateNP.ExecuteNonQuery();
             }
 
             else
@@ -553,6 +595,12 @@ public class UserAction
                     cmdUpdateBF.Parameters.AddWithValue(userId);
                     cmdUpdateBF.Parameters.AddWithValue(targetIp);
                     cmdUpdateBF.ExecuteNonQuery();
+
+                    var cmdUpdateNP = _db.CreateCommand(qUpdateKeywordNP);
+                    cmdUpdateNP.Parameters.AddWithValue(newCracking);
+                    cmdUpdateNP.Parameters.AddWithValue(userId);
+                    cmdUpdateNP.Parameters.AddWithValue(targetIp);
+                    cmdUpdateNP.ExecuteNonQuery();
 
                     //Read New Cracking
 
@@ -615,6 +663,41 @@ public class UserAction
         return message;
     }
 
+    public string ShowNotepad(string[] parts)
+    {
+        if (!UserExists(parts))
+        {
+            return "User does not exist";
+        }
+
+        const string qReadNotepad = "SELECT n.ip_address, n.number_of_attacks, n.keyword, n.dummy_pass FROM notepad n WHERE n.user_id = $1";
+
+        string message = "";
+        int userId = GetUserId(parts);
+
+        try
+        {
+            using var cmd2 = _db.CreateCommand(qReadNotepad);
+            cmd2.Parameters.AddWithValue(userId);
+            using var readNotepad = cmd2.ExecuteReader();
+
+            while (readNotepad.Read())
+            {
+                message += $"\nIP address: {readNotepad.GetString(0)}\nNumber of attacks: {readNotepad.GetInt32(1)}\nKeyword: {readNotepad.GetString(2)}\nPassword: {readNotepad.GetString(3)}\n";
+            }
+
+            if (message == "")
+            {
+                message += "Nothing to show here yet, go hack someone!";
+            }
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine("SHOW NOTEPAD ERROR: " + e.Message);
+        }
+        return message;
+    }
+
     public string AutoDecrypt(string path, string[] parts)
     {
         if (!UserExists(parts))
@@ -622,6 +705,7 @@ public class UserAction
             return "User does not exist";
         }
 
+        int userId = GetUserId(parts);
         string message = "";
 
         try
@@ -634,11 +718,12 @@ public class UserAction
             string qCheckIPKeyword = "SELECT COUNT (*) FROM brute_force WHERE target_ip = $1 AND cracking = $2";
             string qGetDummyPass = "SELECT dummy_pass FROM dummy_password WHERE user_id = $1";
             string qSelectTargetId = "SELECT user_id FROM IP WHERE address = $1";
+            string qUpdateDummyPassNP = "UPDATE notepad SET dummy_pass = $1 WHERE user_id = $2 AND ip_address = $3";
 
             var cmdCheckIPKeyword = _db.CreateCommand(qCheckIPKeyword);
             cmdCheckIPKeyword.Parameters.AddWithValue(targetIp);
             cmdCheckIPKeyword.Parameters.AddWithValue(keyword);
-            var rowCount = (long)cmdCheckIPKeyword.ExecuteScalar();
+            var rowCount = (long?)cmdCheckIPKeyword.ExecuteScalar();
 
             if (rowCount == 0)
             {
@@ -669,6 +754,12 @@ public class UserAction
                 cmdGetDummyPass.Parameters.AddWithValue(targetId);
                 var dummypass = cmdGetDummyPass.ExecuteScalar() as string;
 
+                var cmdUpdateDummyPassNP = _db.CreateCommand(qUpdateDummyPassNP);
+                cmdUpdateDummyPassNP.Parameters.AddWithValue(dummypass);
+                cmdUpdateDummyPassNP.Parameters.AddWithValue(userId);
+                cmdUpdateDummyPassNP.Parameters.AddWithValue(targetIp);
+                cmdUpdateDummyPassNP.ExecuteNonQuery();
+
                 message = $"\nYour target's password is {dummypass}";
             }
         }
@@ -687,7 +778,7 @@ public class UserAction
             var checkUserCmd = _db.CreateCommand(qCheckUser);
             checkUserCmd.Parameters.AddWithValue(parts[0]);
             checkUserCmd.Parameters.AddWithValue(parts[1]);
-            var userCount = (long)checkUserCmd.ExecuteScalar();
+            var userCount = (long?)checkUserCmd.ExecuteScalar();
 
             if (userCount == 0)
             {
@@ -741,5 +832,28 @@ public class UserAction
                 return false;
         }
         return true;
+    }
+
+    public void NewNotepadEntry(int userId, string targetIp)
+    {
+        const string qAddNotepad = "INSERT INTO notepad(user_id, ip_address, number_of_attacks, keyword, dummy_pass) VALUES ($1, $2, $3, $4, $5)";
+
+        using var cmd = _db.CreateCommand(qAddNotepad);
+        cmd.Parameters.AddWithValue(userId);
+        cmd.Parameters.AddWithValue(targetIp);
+        cmd.Parameters.AddWithValue(0);
+        cmd.Parameters.AddWithValue("");
+        cmd.Parameters.AddWithValue("");
+        cmd.ExecuteNonQuery();
+    }
+
+    public void DeleteNotepadEntry(int userId, string targetIp)
+    {
+        const string qDeleteNotepad = "DELETE FROM notepad WHERE user_id = $1 AND ip_address = $2";
+
+        var cmd = _db.CreateCommand(qDeleteNotepad);
+        cmd.Parameters.AddWithValue(userId);
+        cmd.Parameters.AddWithValue(targetIp);
+        cmd.ExecuteNonQuery();
     }
 }

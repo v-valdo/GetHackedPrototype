@@ -86,6 +86,12 @@ public class RequestHandler
             PrintAndLoopback(response, message);
         }
 
+        if (path.Contains("notepad.exe"))
+        {
+            message = _user.ShowNotepad(parts);
+            PrintAndLoopback(response, message);
+        }
+
         PrintAndLoopback(response, "Invalid endpoint");
     }
     private void Post(HttpListenerResponse response, HttpListenerRequest request)
@@ -105,7 +111,6 @@ public class RequestHandler
             PrintAndLoopback(response, _police.SendToJail(parts));
             return;
         }
-
 
         // Register User: curl -X POST http://localhost:3000/newuser -d 'username,password,dummy_password,keyword'
         if (path.Contains("newuser"))
@@ -167,7 +172,7 @@ public class RequestHandler
     }
     public void GeneratePoliceIP()
     {
-        const string qCountUsers = @$"SELECT COUNT(*) FROM users u WHERE u.id > 0";
+        const string qCountUsers = "SELECT COUNT(*) FROM users u WHERE u.id > 0";
         const string qAddPoliceIp = "INSERT INTO ip(address,user_id) VALUES ($1, $2)";
 
         var cmdCountUsers = _db.CreateCommand(qCountUsers);

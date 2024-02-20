@@ -86,6 +86,8 @@ public class Software
         StatusCenter.Name = "StatusCenter_V2.exe";
 
         Animation.Loading(StatusCenter);
+        Animation.Loading(StatusCenter);
+
         try
         {
             var request = new HttpRequestMessage
@@ -109,6 +111,9 @@ public class Software
     public async Task Attack(HttpClient client, User user, string ip)
     {
         using StringContent textContent = new StringContent($"{user.Username},{user.Password}", Encoding.UTF8, "text/plain");
+        Software software = new();
+        software.Name = "WallBreaker_v0.2.exe";
+        Animation.Loading(software);
 
         try
         {
@@ -124,6 +129,9 @@ public class Software
     public async Task HideMe(HttpClient client, User user)
     {
         using StringContent textContent = new StringContent($"{user.Username},{user.Password}", Encoding.UTF8, "text/plain");
+        Software software = new();
+        software.Name = "HideMe_0.9.exe";
+        Animation.Loading(software);
 
         try
         {
@@ -139,7 +147,9 @@ public class Software
     public async Task Heal(HttpClient client, User user)
     {
         using StringContent textContent = new StringContent($"{user.Username},{user.Password}", Encoding.UTF8, "text/plain");
-
+        Software software = new();
+        software.Name = "FireWallFirmwareUpdator.exe";
+        Animation.Loading(software);
         try
         {
             using HttpResponseMessage response = await client.PutAsync(client.BaseAddress + $"updatefirewall.exe", textContent);
@@ -154,7 +164,9 @@ public class Software
     public async Task Inject(HttpClient client, User user, string ip, string dummyPassword)
     {
         using StringContent textContent = new StringContent($"{user.Username},{user.Password}", Encoding.UTF8, "text/plain");
-
+        Software software = new();
+        software.Name = "ssh-injectscript.exe";
+        Animation.Loading(software);
         try
         {
             using HttpResponseMessage response = await client.PutAsync(client.BaseAddress + $"injector.exe/{dummyPassword}/{ip}", textContent);

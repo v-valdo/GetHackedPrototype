@@ -5,7 +5,7 @@ Player Commands
 -X POST localhost:3000/newuser -d 'username,password'
 
 --- IPScanner ---
--X GET localhost:3000/ipscanner.exe -d 'username,password,keyword'
+-X GET localhost:3000/ipscanner.exe -d 'username,password'
 
 --- ShowStats ---
 curl -X GET localhost:3000/statuscenter.exe -d 'username,password'

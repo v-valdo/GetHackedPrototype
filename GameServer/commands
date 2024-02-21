@@ -2,26 +2,34 @@
 Player Commands
 
 --- Register ---
--X POST localhost:3000/newuser -d 'username,password'
+curl -X POST localhost:3000/newuser -d 'username,password'
+
 
 --- IPScanner ---
--X GET localhost:3000/ipscanner.exe -d 'username,password'
+curl -X GET localhost:3000/ipscanner.exe -d 'username,password'
 
---- ShowStats ---
-curl -X GET localhost:3000/statuscenter.exe -d 'username,password'
+-- Attack ---
+curl -X PUT localhost:3000/attack/insertIPaddress -d 'username,password'
+
+--- Auto Decrypt ---
+curl -X GET localhost:3000/autodecrypt.exe/insertIPaddress/insertKeyword -d 'username,password'
+
+--- Final Hack ---
+curl -X PUT localhost:3000/injector.exe/insertdummypassword/inserttargetIP -d 'username,password'
+
 
 --- Reset IP ---
--X PUT localhost:3000/hideme.exe -d 'username,password'
-
+curl -X PUT localhost:3000/hideme.exe -d 'username,password'
 
 --- Heal ---
 curl X- PUT localhost:3000/updatefirewall.exe -d 'username,password'
 
--- Attack ---
--X PUT localhost:3000/attack/insertIPaddress -d 'username,password'
 
---- Auto Decrypt ---
--X GET localhost:3000/autodecrypt/insertIPaddress/insertKeyword -d 'username,password'
+--- ShowStats ---
+curl -X GET localhost:3000/statuscenter.exe -d 'username,password'
 
---- Final Hack ---
-curl -X PUT localhost:3000/finalhack/insertdummypassword/inserttargetIP -d 'username,password'
+--- Notepad ---
+curl -X GET localhost:3000/notepad.exe -d 'username, password'
+
+
+

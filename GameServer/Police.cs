@@ -38,10 +38,10 @@ public class Police
          values ($1, $2);";
 
         const string qResetStats = @"
-update users
-set detection = 0, 
-hackercoinz = hackercoinz * 0.5
-where id = $1";
+        update users
+        set detection = 0, 
+        hackercoinz = hackercoinz * 0.5
+        where id = $1";
 
         try
         {
@@ -69,9 +69,9 @@ where id = $1";
     public bool IsInJail(string[] parts)
     {
         const string qCheckJailtime = @"
-    select jailtime 
-    from users_jail 
-    where user_id = $1;";
+        select jailtime 
+        from users_jail 
+        where user_id = $1;";
         try
         {
             int userId = Convert.ToInt32(_user.GetUserId(parts));
@@ -108,14 +108,13 @@ where id = $1";
     private void ReleaseFromJail(int userId)
     {
         const string qDeleteUserJail = @"
-    delete from users_jail 
-    where user_id = $1;";
+        delete from users_jail 
+        where user_id = $1;";
 
         using var deleteCmd = _db.CreateCommand(qDeleteUserJail);
         deleteCmd.Parameters.AddWithValue(userId);
         deleteCmd.ExecuteNonQuery();
         Console.WriteLine($"User {userId} released from jail");
-
     }
     public string AttackedPolice(int userId)
     {

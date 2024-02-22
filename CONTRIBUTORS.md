@@ -10,6 +10,6 @@
 
 - Barbara Lipsky - *AreiaAruanda*
 
-### Honourary contributor
+### Honorary contributor
 
 - Eric Browne - *ericbr0wne*

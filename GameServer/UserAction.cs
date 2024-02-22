@@ -3,12 +3,77 @@ namespace GameServer;
 using GetHackedPrototype;
 using Npgsql;
 using System.Net;
+using System.Transactions;
+
 public class UserAction
 {
     private readonly NpgsqlDataSource _db;
     public UserAction(NpgsqlDataSource db)
     {
         _db = db;
+    }
+
+    public string RestoreDetection(string[] parts)
+    {
+        if (!UserExists(parts))
+        {
+            return "User doesn't exist";
+        }
+
+        const string qCheckDetection = "SELECT detection FROM users WHERE id = $1";
+        const string qCheckCoinz = "SELECT hackercoinz FROM users WHERE id = $1";
+        const string qUpdateUser = "UPDATE users SET hackercoinz = hackercoinz - 10, detection = detection - 20 WHERE id = $1";
+
+        int userId = GetUserId(parts);
+        string message = "";
+
+        try
+        {
+            var cmdCheckDetection = _db.CreateCommand(qCheckDetection);
+            cmdCheckDetection.Parameters.AddWithValue(userId);
+            using var readDetection = cmdCheckDetection.ExecuteReader();
+
+            int detectionLimit = 20;
+            int currentDetection = 0;
+            while (readDetection.Read())
+            {
+                currentDetection = readDetection.GetInt32(0);
+                if (currentDetection < detectionLimit)
+                {
+                    message += "You can't bring your detection down to a negative number";
+                    return message;
+                }
+                else
+                {
+                    currentDetection -= detectionLimit;
+                }
+            }
+
+            var cmdCheckCoinz = _db.CreateCommand(qCheckCoinz);
+            cmdCheckCoinz.Parameters.AddWithValue(userId);
+            using var readCoinz = cmdCheckCoinz.ExecuteReader();
+
+            int requiredCoinz = 30;
+            while (readCoinz.Read())
+            {
+                int currentCoinz = readCoinz.GetInt32(0);
+                if (currentCoinz < requiredCoinz)
+                {
+                    message += "Not enough HackerCoinz to pay for this service (30 is required)";
+                    return message;
+                }
+            }
+
+            var cmdUpdateUser = _db.CreateCommand(qUpdateUser);
+            cmdUpdateUser.Parameters.AddWithValue(userId);
+            cmdUpdateUser.ExecuteNonQuery();
+            message += $"You paid 10 HackerCoinz and your current detection is now at: {currentDetection}%";
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine($"REMOVE DETECTION ERROR: {e.Message}");
+        }
+        return message;
     }
 
     public string HideMe(string[] parts, RequestHandler handler)
@@ -672,9 +737,9 @@ public class UserAction
 
         try
         {
-            using var cmd2 = _db.CreateCommand(qReadNotepad);
-            cmd2.Parameters.AddWithValue(userId);
-            using var readNotepad = cmd2.ExecuteReader();
+            using var cmd = _db.CreateCommand(qReadNotepad);
+            cmd.Parameters.AddWithValue(userId);
+            using var readNotepad = cmd.ExecuteReader();
 
             while (readNotepad.Read())
             {

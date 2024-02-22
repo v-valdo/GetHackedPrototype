@@ -27,3 +27,6 @@ curl -X GET localhost:3000/statuscenter.exe -d 'username,password'
 
 --- Notepad ---
 curl -X GET localhost:3000/notepad.exe -d 'username, password'
+
+--- Restore Detection ---
+curl -X GET localhost:3000/restoredetection.exe -d 'username, password'

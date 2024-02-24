@@ -8,7 +8,7 @@
 
 - Valdemar Sersam - [*v-valdo*](https://github.com/v-valdo)
 
-- Barbara Lipsky - [*AreiaAruanda*](https://github.com/AreiaAruanda)
+- Barbara Ekelund - [*AreiaAruanda*](https://github.com/AreiaAruanda)
 
 ### Honorary contributor
 

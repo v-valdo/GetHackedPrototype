@@ -4,7 +4,6 @@ Player Commands
 --- Register ---
 curl -X POST localhost:3000/newuser -d 'username,password'
 
-
 --- IPScanner ---
 curl -X GET localhost:3000/ipscanner.exe -d 'username,password'
 
@@ -17,13 +16,11 @@ curl -X GET localhost:3000/autodecrypt.exe/insertIPaddress/insertKeyword -d 'use
 --- Final Hack ---
 curl -X PUT localhost:3000/injector.exe/insertdummypassword/inserttargetIP -d 'username,password'
 
-
 --- Reset IP ---
 curl -X PUT localhost:3000/hideme.exe -d 'username,password'
 
 --- Heal ---
 curl X- PUT localhost:3000/updatefirewall.exe -d 'username,password'
-
 
 --- ShowStats ---
 curl -X GET localhost:3000/statuscenter.exe -d 'username,password'
@@ -31,5 +28,5 @@ curl -X GET localhost:3000/statuscenter.exe -d 'username,password'
 --- Notepad ---
 curl -X GET localhost:3000/notepad.exe -d 'username, password'
 
-
-
+--- Restore Detection ---
+curl -X GET localhost:3000/restoredetection.exe -d 'username, password'

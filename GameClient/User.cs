@@ -151,6 +151,9 @@ public class User
                     var (ip, decryptPass) = Prompts.DecryptorPrompt();
                     await software.AutoDecryptor(_client, _baseUri, user, ip, decryptPass);
                     break;
+                case "run detectionrestorer":
+                    await software.RestoreDetection(_client, user);
+                    break;
                 case "logout":
                     Console.Clear();
                     await WelcomeMenu();
@@ -177,6 +180,7 @@ public class User
         TextPosition.Center("> run injector"); // final attack
         TextPosition.Center("> run statuscenter"); // show stats
         TextPosition.Center("> run notepad"); // show notepad
+        TextPosition.Center("> run detectionrestorer"); // restores detection
         TextPosition.Center("> clear"); // clears console
         TextPosition.Center("> logout"); // logs out user
 

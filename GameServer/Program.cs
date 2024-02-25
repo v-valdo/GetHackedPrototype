@@ -4,7 +4,6 @@ using Npgsql;
 bool listen = true;
 const string dbUri = "Host=localhost;Port=5455;Username=postgres;Password=postgres;Database=gethacked;";
 
-/// Handle ctrl + c interrupt event, and gracefully shut down server
 Console.CancelKeyPress += delegate (object? sender, ConsoleCancelEventArgs e)
 {
     Console.WriteLine("Interrupting cancel event");
@@ -25,4 +24,3 @@ finally
 {
     requestHandler.Stop();
 }
-

@@ -208,4 +208,21 @@ public class Software
             Console.WriteLine(e.Message);
         }
     }
+    public async Task RestoreDetection(HttpClient client, User user)
+    {
+        using StringContent textContent = new StringContent($"{user.Username},{user.Password}", Encoding.UTF8, "text/plain");
+        Software software = new();
+        software.Name = "DetectionUpdator_v1.0.exe";
+        Animation.Loading(software);
+        try
+        {
+            using HttpResponseMessage response = await client.PutAsync(client.BaseAddress + $"restoredetection.exe", textContent);
+            var jsonResponse = await response.Content.ReadAsStringAsync();
+            Console.WriteLine($"{jsonResponse}\n");
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e.Message);
+        }
+    }
 }

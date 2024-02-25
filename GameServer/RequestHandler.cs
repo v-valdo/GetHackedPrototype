@@ -40,7 +40,7 @@ public class RequestHandler
         switch (request.HttpMethod)
         {
             case "GET":
-                Console.WriteLine($"get request received - {request.RawUrl}");
+                Console.WriteLine($"get request received to {request.RawUrl}");
                 Get(response, request);
                 break;
             case "POST":
@@ -117,7 +117,6 @@ public class RequestHandler
             return;
         }
 
-        // Register User: curl -X POST http://localhost:3000/newuser -d 'username,password,dummy_password,keyword'
         if (path.Contains("newuser"))
         {
             message = _user.Register(parts, this);
@@ -144,13 +143,13 @@ public class RequestHandler
             return;
         }
 
-        if (path.Contains("attack")) //Attack! curl -X PUT http://localhost:3000/attack/targetIP -d 'username,password'
+        if (path.Contains("attack"))
         {
             message = _user.Attack(path, parts);
             PrintAndLoopback(response, message);
         }
 
-        if (path.Contains("injector.exe")) //Final Hack curl -X PUT http://localhost:3000/injector.exe/dummypassword/targetIP -d 'username,password'
+        if (path.Contains("injector.exe"))
         {
             message = _user.FinalHack(path, parts, this);
             PrintAndLoopback(response, message);
@@ -161,11 +160,19 @@ public class RequestHandler
             message = _user.HideMe(parts, this);
             PrintAndLoopback(response, message);
         }
+
         if (path.Contains("updatefirewall.exe"))
         {
             message = _user.Heal(parts);
             PrintAndLoopback(response, message);
         }
+
+        if (path.Contains("restoredetection.exe"))
+        {
+            message = _user.RestoreDetection(parts);
+            PrintAndLoopback(response, message);
+        }
+
         PrintAndLoopback(response, "Invalid endpoint");
     }
     public IPAddress Generate()
